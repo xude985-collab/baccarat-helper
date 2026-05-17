@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>对冲助手</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow-x: hidden; }
+body { font-family: -apple-system, 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #eee; padding: 10px; }
+.container { max-width: 500px; margin: 0 auto; }
+h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
+.settings { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
+.settings label { font-size: 12px; display: flex; align-items: center; gap: 5px; }
+.settings input { width: 65px; padding: 6px; border-radius: 6px; border: 1px solid #444; background: #0f3460; color: #fff; font-size: 14px; text-align: center; }
+.warning { background: #f39c12; color: #000; padding: 8px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; font-weight: bold; text-align: center; display: none; }
+.danger { background: #e74c3c; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; font-weight: bold; text-align: center; display: none; }
+.session-done { background: #27ae60; color: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: center; display: none; }
+.session-done .done-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+.session-done .done-info { font-size: 13px; }
+.next-info { text-align: center; background: #0f3460; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+.next-info .round-num { color: #ffd700; font-size: 20px; font-weight: bold; }
+.next-info .bets { font-size: 13px; margin-top: 4px; color: #ccc; }
+.next-info .bets strong { color: #fff; }
+.result-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.result-btn { padding: 18px 10px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; touch-action: manipulation; }
+.btn-banker { background: #e94560; color: #fff; }
+.btn-player { background: #4ecdc4; color: #fff; }
+.btn-tie { background: #444; color: #aaa; font-size: 14px; }
+.panel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.side { background: #16213e; border-radius: 10px; padding: 12px; }
+.side-a { border-left: 3px solid #e94560; }
+.side-b { border-left: 3px solid #4ecdc4; }
+.side-title { font-size: 12px; margin-bottom: 4px; }
+.side-a .side-title { color: #e94560; }
+.side-b .side-title { color: #4ecdc4; }
+.bet-num { font-size: 32px; font-weight: bold; text-align: center; margin: 6px 0; }
+.side-a .bet-num { color: #e94560; }
+.side-b .bet-num { color: #4ecdc4; }
+.side-info { font-size: 11px; color: #888; line-height: 1.6; }
+.side-info span { color: #ffd700; }
+.side-rule { font-size: 10px; color: #666; margin-top: 4px; padding-top: 4px; border-top: 1px solid #2a2a4a; }
+.summary { background: #16213e; border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 10px; }
+.profit { font-size: 28px; font-weight: bold; }
+.profit.positive { color: #2ecc71; }
+.profit.negative { color: #e74c3c; }
+.profit.zero { color: #666; }
+.sub { font-size: 11px; color: #666; margin-top: 4px; }
+.history { background: #16213e; border-radius: 10px; padding: 10px; max-height: 220px; overflow-y: auto; }
+.history h3 { font-size: 12px; color: #ffd700; margin-bottom: 6px; }
+.h-row { display: grid; grid-template-columns: 25px 1fr 1fr 55px; gap: 4px; padding: 5px 0; border-bottom: 1px solid #252545; font-size: 11px; align-items: center; }
+.win { color: #2ecc71; font-weight: bold; }
+.lose { color: #e74c3c; }
+.tie-text { color: #666; }
+.bottom-bar { display: flex; gap: 8px; margin-top: 10px; justify-content: center; }
+.bottom-btn { padding: 8px 20px; background: #333; color: #aaa; border: 1px solid #444; border-radius: 6px; font-size: 12px; cursor: pointer; touch-action: manipulation; }
+.undo-btn { border-color: #f39c12; color: #f39c12; }
+.mode-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+.mode-btn { padding: 8px 4px; border: 2px solid #444; border-radius: 8px; background: #16213e; color: #aaa; font-size: 11px; text-align: center; cursor: pointer; touch-action: manipulation; }
+.mode-btn.active { border-color: #ffd700; color: #ffd700; background: #1a1a3e; }
+.single-bet { background: #16213e; border-radius: 10px; padding: 12px; margin-bottom: 10px; text-align: center; display: none; }
+.single-bet .sb-title { font-size: 12px; color: #888; }
+.single-bet .sb-side { font-size: 16px; font-weight: bold; color: #ffd700; margin: 4px 0; }
+.single-bet .sb-amount { font-size: 32px; font-weight: bold; color: #2ecc71; }
+.strategy-ref { background: #16213e; border-radius: 10px; padding: 10px; margin-bottom: 10px; font-size: 11px; line-height: 1.7; color: #aaa; display: none; }
+.strategy-ref .ref-title { color: #ffd700; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+.strategy-ref .ref-row { display: flex; justify-content: space-between; border-bottom: 1px solid #252545; padding: 3px 0; }
+.strategy-ref .ref-row:last-child { border-bottom: none; }
+.strategy-ref .ref-label { color: #fff; }
+.strategy-ref .ref-rule { color: #4ecdc4; }
+.ref-toggle { text-align: center; margin-bottom: 8px; }
+.ref-toggle button { background: none; border: 1px solid #444; color: #888; font-size: 11px; padding: 3px 12px; border-radius: 4px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>百家乐助手</h1>
+
+<div class="ref-toggle" style="display:none;"><button onclick="toggleRef()">策略表 ▼</button></div>
+<div class="strategy-ref" id="strategyRef" style="display:none;">
+<div class="ref-title">策略速查</div>
+<div class="ref-row"><span class="ref-label">两庄两闲/三庄三闲</span><span class="ref-rule">对冲AB | 你的5条 | 幸运注10%</span></div>
+<div class="ref-row"><span class="ref-label">1:2(庄闲闲)</span><span class="ref-rule">单边跟节奏 | 你的3条 | 幸运注10%</span></div>
+<div class="ref-row"><span class="ref-label">连庄/连闲</span><span class="ref-rule">单边跟龙 | 反马丁 | 幸运注10%</span></div>
+<div class="ref-row"><span class="ref-label">一庄一闲</span><span class="ref-rule">单边买反 | 反马丁 | 幸运注10%</span></div>
+<div style="margin-top:6px;padding-top:6px;border-top:1px solid #333;">
+<div class="ref-row"><span style="color:#e94560;">5条:</span><span>输不变3输倍|赢倍|2连赢归零|震荡不倍|三层首赢不倍</span></div>
+<div class="ref-row"><span style="color:#f39c12;">3条:</span><span>输不变3输倍|赢倍|2连赢归零</span></div>
+<div class="ref-row"><span style="color:#4ecdc4;">反马丁:</span><span>输回base|赢倍|3连赢归零</span></div>
+</div>
+</div>
+
+<div class="mode-bar">
+<div class="mode-btn active" id="modeHedge" onclick="setMode('hedge')">对冲<br><span style="font-size:9px">两庄两闲|5条</span></div>
+<div class="mode-btn" id="modeFollow" onclick="setMode('follow')">跟节奏<br><span style="font-size:9px">1:2模式|3条</span></div>
+<div class="mode-btn" id="modeDragon" onclick="setMode('dragon')">跟龙<br><span style="font-size:9px">连庄连闲|反马丁</span></div>
+<div class="mode-btn" id="modeAlt" onclick="setMode('alt')">买反<br><span style="font-size:9px">一庄一闲|反马丁</span></div>
+</div>
+
+<div class="settings">
+<label>基础注<input type="number" id="baseUnit" value="500"></label>
+<label>本金<input type="number" id="bankroll" value="10000"></label>
+<label>局数上限<input type="number" id="maxRounds" value="10"></label>
+</div>
+<div class="warning" id="warning"></div>
+<div class="danger" id="danger"></div>
+<div class="session-done" id="sessionDone">
+<div class="done-title">到局数了! 该离场</div>
+<div class="done-info" id="doneInfo"></div>
+</div>
+<div class="single-bet" id="singleBet">
+<div class="sb-title" id="sbTitle">观察中...</div>
+<div class="sb-side" id="sbSide">等待</div>
+<div class="sb-amount" id="sbAmount">—</div>
+<div class="sb-lucky" id="sbLucky" style="font-size:12px;color:#ffd700;margin-top:6px;display:none;"></div>
+</div>
+<div class="next-info">
+<div>第 <span class="round-num" id="nextRound">1</span> 局</div>
+<div class="bets">A(庄)下:<strong id="nextA">50</strong> | B(闲)下:<strong id="nextB">50</strong> | 共:<strong id="nextTotal">100</strong></div>
+<div class="bets" id="hedgeLucky" style="color:#ffd700;display:none;"></div>
+</div>
+<div class="result-buttons">
+<button class="result-btn btn-banker" onclick="play('banker')">庄赢</button>
+<button class="result-btn btn-player" onclick="play('player')">闲赢</button>
+<button class="result-btn btn-tie" onclick="play('tie')">和</button>
+</div>
+<div class="panel">
+<div class="side side-a">
+<div class="side-title">A 押庄 | 下局注码:</div>
+<div class="bet-num" id="aBet">500</div>
+<div class="side-info">连输:<span id="aLose">0</span>/3 | 连赢:<span id="aWin">0</span>/2 | 总输:<span id="aTotalLoss">0</span>/6</div>
+<div class="side-rule" id="aRule">等待开局</div>
+<button class="bottom-btn" id="aResume" style="display:none;margin-top:6px;font-size:11px;padding:4px 12px;" onclick="resume('a')">恢复A边</button>
+</div>
+<div class="side side-b">
+<div class="side-title">B 押闲 | 下局注码:</div>
+<div class="bet-num" id="bBet">500</div>
+<div class="side-info">连输:<span id="bLose">0</span>/3 | 连赢:<span id="bWin">0</span>/2 | 总输:<span id="bTotalLoss">0</span>/6</div>
+<div class="side-rule" id="bRule">等待开局</div>
+<button class="bottom-btn" id="bResume" style="display:none;margin-top:6px;font-size:11px;padding:4px 12px;" onclick="resume('b')">恢复B边</button>
+</div>
+</div>
+<div class="summary">
+<div class="profit zero" id="totalProfit">0</div>
+<div class="sub">A:<span id="aProfit">0</span> | B:<span id="bProfit">0</span> | <span id="roundCount">0</span>局</div>
+</div>
+<div class="history" id="historyBox">
+<h3>记录</h3>
+<div id="historyList"></div>
+</div>
+<div class="bottom-bar">
+<button class="bottom-btn undo-btn" onclick="undo()">撤销</button>
+<button class="bottom-btn" onclick="resetAll()">重置</button>
+</div>
+</div>
+<script>
+/*
+  五条规则:
+  1. 输了注码不变，连输3次→加倍
+  2. 赢了→加倍
+  3. 连赢2次→回到基础注码
+  4. 交替(对错对错)→赢了不加倍，等连续两赢
+  5. 第三层(base×4)以上，通过输进入的→第一次赢不加倍，之后恢复正常
+*/
+
+var currentMode = 'hedge'; // hedge, follow, dragon, alt
+var singleState = { bet: 500, loseStreak: 0, winStreak: 0, profit: 0, side: null, observing: true, rhythm: null };
+
+function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(function(el){ el.classList.remove('active'); });
+    var ids = { hedge: 'modeHedge', follow: 'modeFollow', dragon: 'modeDragon', alt: 'modeAlt' };
+    document.getElementById(ids[mode]).classList.add('active');
+
+    var panel = document.querySelector('.panel');
+    var nextInfo = document.querySelector('.next-info');
+    var singleEl = document.getElementById('singleBet');
+
+    if (mode === 'hedge') {
+        panel.style.display = '';
+        nextInfo.style.display = '';
+        singleEl.style.display = 'none';
+    } else {
+        panel.style.display = 'none';
+        nextInfo.style.display = 'none';
+        singleEl.style.display = 'block';
+        updateSingleDisplay();
+    }
+    resetAll();
+}
+
+function updateSingleDisplay() {
+    var base = getBase();
+    var s = singleState;
+    var titleEl = document.getElementById('sbTitle');
+    var sideEl = document.getElementById('sbSide');
+    var amountEl = document.getElementById('sbAmount');
+
+    if (s.observing) {
+        var need = currentMode === 'follow' ? 3 : 2;
+        var seen = gameHistory.length;
+        titleEl.textContent = '观察中 (' + seen + '/' + need + '局)';
+        sideEl.textContent = '不下注';
+        amountEl.textContent = '—';
+        document.getElementById('sbLucky').style.display = 'none';
+    } else {
+        var modeNames = { follow: '跟节奏(你的3条)', dragon: '跟龙(反马丁)', alt: '买反(反马丁)' };
+        titleEl.textContent = modeNames[currentMode] + ' | 下局:';
+        sideEl.textContent = '买' + (s.side === 'B' ? '庄' : '闲');
+        sideEl.style.color = s.side === 'B' ? '#e94560' : '#4ecdc4';
+        amountEl.textContent = s.bet;
+
+        // 幸运6/7提示
+        var luckyEl = document.getElementById('sbLucky');
+        if (s.winStreak >= 1) {
+            var luckyAmt = Math.round(s.bet * 0.1);
+            if (s.side === 'B') {
+                luckyEl.textContent = '带幸运6: ' + luckyAmt;
+            } else {
+                luckyEl.textContent = '带幸运7: ' + luckyAmt;
+            }
+            luckyEl.style.display = 'block';
+        } else {
+            luckyEl.style.display = 'none';
+        }
+    }
+}
+
+function calcSingleSide() {
+    var h = gameHistory;
+    if (currentMode === 'follow') {
+        if (h.length < 3) { singleState.observing = true; return; }
+        // 跟节奏: 用前3局确定周期，按位置预测下一局
+        if (!singleState.rhythm) {
+            singleState.rhythm = h.slice(0, 3); // 锁定前3局为节奏模板
+        }
+        var nextPos = h.length % 3; // 当前在周期中的位置
+        singleState.side = singleState.rhythm[nextPos];
+        singleState.observing = false;
+    } else if (currentMode === 'dragon') {
+        if (h.length < 2) { singleState.observing = true; return; }
+        singleState.side = h[h.length - 1];
+        singleState.observing = false;
+    } else if (currentMode === 'alt') {
+        if (h.length < 2) { singleState.observing = true; return; }
+        singleState.side = h[h.length - 1] === 'B' ? 'P' : 'B';
+        singleState.observing = false;
+    }
+}
+
+function processSingle(winner) {
+    var base = getBase();
+    var s = singleState;
+
+    if (s.observing) {
+        calcSingleSide();
+        return;
+    }
+
+    var betNow = s.bet;
+    if (s.side === winner) {
+        s.profit += betNow;
+        s.winStreak++;
+        s.loseStreak = 0;
+
+        if (currentMode === 'follow') {
+            // 跟多: 用户的3条规则
+            if (s.winStreak >= 2) { s.bet = base; s.winStreak = 0; }
+            else { s.bet = s.bet * 2; }
+        } else {
+            // 跟龙/买反: 反马丁 (3连赢锁利润)
+            if (s.winStreak >= 3) { s.bet = base; s.winStreak = 0; }
+            else { s.bet = s.bet * 2; }
+        }
+    } else {
+        s.profit -= betNow;
+        s.loseStreak++;
+        s.winStreak = 0;
+
+        if (currentMode === 'follow') {
+            // 跟多: 用户的3条规则 (3输加倍)
+            if (s.loseStreak >= 3) { s.bet = s.bet * 2; s.loseStreak = 0; }
+        } else {
+            // 跟龙/买反: 反马丁 (输了立刻回base)
+            s.bet = base;
+        }
+    }
+
+    calcSingleSide();
+
+    // 更新总盈亏显示
+    var el = document.getElementById('totalProfit');
+    el.textContent = (s.profit >= 0 ? '+' : '') + s.profit;
+    el.className = 'profit ' + (s.profit > 0 ? 'positive' : s.profit < 0 ? 'negative' : 'zero');
+}
+
+function getBase() { return parseInt(document.getElementById('baseUnit').value) || 50; }
+function getBankroll() { return parseInt(document.getElementById('bankroll').value) || 10000; }
+
+function newSide(base) {
+    return { bet: base, loseStreak: 0, winStreak: 0, profit: 0, rule5shield: false, results: [], totalLosses: 0, paused: false };
+}
+
+let state = { a: newSide(50), b: newSide(50) };
+let rounds = 0;
+let snapshots = [];
+let gameHistory = []; // 'B'=banker wins, 'P'=player wins
+
+function getLayer(bet, base) {
+    if (bet <= base) return 1;
+    if (bet <= base * 2) return 2;
+    if (bet <= base * 4) return 3;
+    return 4;
+}
+
+function isAlt(results) {
+    if (results.length < 4) return false;
+    var r = results.slice(-4);
+    return r[0] !== r[1] && r[1] !== r[2] && r[2] !== r[3];
+}
+
+function processSide(s, result, base) {
+    var betThisRound = s.bet;
+    var rule = '';
+
+    if (result === 'tie') {
+        return { bet: betThisRound, rule: '和局 不变' };
+    }
+
+    if (s.paused) {
+        if (result === 'win') {
+            rule = '⏸ 已暂停(不下注)';
+        } else {
+            rule = '⏸ 已暂停(不下注)';
+        }
+        return { bet: 0, rule: rule };
+    }
+
+    if (result === 'win') {
+        s.profit += betThisRound;
+        s.results.push('W');
+        s.loseStreak = 0;
+        s.totalLosses = 0;
+        s.winStreak++;
+
+        if (s.winStreak >= 2) {
+            s.bet = base;
+            s.winStreak = 0;
+            s.loseStreak = 0;
+            s.rule5shield = false;
+            s.results = [];
+            rule = '★ 两连赢 回到' + base;
+        } else if (s.rule5shield) {
+            s.rule5shield = false;
+            rule = '规则5: 高层首赢 不加倍';
+        } else if (isAlt(s.results)) {
+            rule = '规则4: 震荡 不加倍';
+        } else {
+            s.bet = s.bet * 2;
+            rule = '赢→加倍 下局' + s.bet;
+        }
+    } else {
+        s.profit -= betThisRound;
+        s.results.push('L');
+        s.winStreak = 0;
+        s.loseStreak++;
+        s.totalLosses++;
+
+        if (s.totalLosses >= 6) {
+            s.paused = true;
+            rule = '⛔ 连输6局 暂停!';
+        } else if (s.loseStreak >= 3) {
+            var oldBet = s.bet;
+            s.bet = s.bet * 2;
+            s.loseStreak = 0;
+            if (getLayer(oldBet, base) >= 3) {
+                s.rule5shield = true;
+            }
+            rule = '3连输→加倍 下局' + s.bet;
+        } else {
+            rule = '输 不变 (连输' + s.loseStreak + '/3)';
+        }
+    }
+
+    return { bet: betThisRound, rule: rule };
+}
+
+function play(winner) {
+    snapshots.push(JSON.parse(JSON.stringify({ state: state, rounds: rounds, gameHistory: gameHistory, singleState: singleState })));
+    if (snapshots.length > 50) snapshots.shift();
+
+    var base = getBase();
+    if (winner !== 'tie') gameHistory.push(winner === 'banker' ? 'B' : 'P');
+
+    if (currentMode === 'hedge') {
+        var aResult = winner === 'banker' ? 'win' : winner === 'player' ? 'lose' : 'tie';
+        var bResult = winner === 'player' ? 'win' : winner === 'banker' ? 'lose' : 'tie';
+        var aBet = state.a.bet;
+        var bBet = state.b.bet;
+        var aInfo = processSide(state.a, aResult, base);
+        var bInfo = processSide(state.b, bResult, base);
+        rounds++;
+        addHistory(winner, aBet, bBet, aResult, bResult);
+        updateAll();
+        document.getElementById('aRule').textContent = aInfo.rule;
+        document.getElementById('bRule').textContent = bInfo.rule;
+    } else {
+        var w = winner === 'banker' ? 'B' : winner === 'player' ? 'P' : null;
+        if (w) processSingle(w);
+        rounds++;
+        addHistorySingle(winner);
+        updateSingleDisplay();
+        // 更新局数
+        document.getElementById('roundCount').textContent = rounds;
+    }
+
+    checkDanger(base);
+}
+
+function updateAll() {
+    ['a', 'b'].forEach(function(side) {
+        var s = state[side];
+        document.getElementById(side + 'Bet').textContent = s.paused ? '暂停' : s.bet;
+        document.getElementById(side + 'Lose').textContent = s.loseStreak;
+        document.getElementById(side + 'Win').textContent = s.winStreak;
+        document.getElementById(side + 'TotalLoss').textContent = s.totalLosses;
+        document.getElementById(side + 'Profit').textContent = (s.profit >= 0 ? '+' : '') + s.profit;
+        document.getElementById(side + 'Resume').style.display = s.paused ? 'inline-block' : 'none';
+    });
+    var total = state.a.profit + state.b.profit;
+    var el = document.getElementById('totalProfit');
+    el.textContent = (total >= 0 ? '+' : '') + total;
+    el.className = 'profit ' + (total > 0 ? 'positive' : total < 0 ? 'negative' : 'zero');
+    document.getElementById('roundCount').textContent = rounds;
+    document.getElementById('nextRound').textContent = rounds + 1;
+    var nextA = state.a.paused ? 0 : state.a.bet;
+    var nextB = state.b.paused ? 0 : state.b.bet;
+    document.getElementById('nextA').textContent = state.a.paused ? '停' : state.a.bet;
+    document.getElementById('nextB').textContent = state.b.paused ? '停' : state.b.bet;
+    document.getElementById('nextTotal').textContent = nextA + nextB;
+
+    // 幸运6/7提示(对冲模式)
+    var luckyEl = document.getElementById('hedgeLucky');
+    if (state.a.winStreak >= 1 && !state.a.paused) {
+        var lucky6 = Math.round(state.a.bet * 0.1);
+        luckyEl.textContent = '带幸运6: ' + lucky6 + ' (庄在连赢)';
+        luckyEl.style.display = 'block';
+    } else if (state.b.winStreak >= 1 && !state.b.paused) {
+        var lucky7 = Math.round(state.b.bet * 0.1);
+        luckyEl.textContent = '带幸运7: ' + lucky7 + ' (闲在连赢)';
+        luckyEl.style.display = 'block';
+    } else {
+        luckyEl.style.display = 'none';
+    }
+
+    var bankroll = getBankroll();
+    var w = document.getElementById('warning');
+    if (nextA + nextB > bankroll * 0.2) {
+        w.textContent = '⚠ 总注码超本金20%';
+        w.style.display = 'block';
+    } else { w.style.display = 'none'; }
+}
+
+function resume(side) {
+    var base = getBase();
+    state[side].paused = false;
+    state[side].bet = base;
+    state[side].loseStreak = 0;
+    state[side].winStreak = 0;
+    state[side].totalLosses = 0;
+    state[side].rule5shield = false;
+    state[side].results = [];
+    updateAll();
+    document.getElementById(side + 'Rule').textContent = '已恢复 从' + base + '开始';
+}
+
+function addHistorySingle(winner) {
+    var list = document.getElementById('historyList');
+    var div = document.createElement('div');
+    div.className = 'h-row';
+    var s = singleState;
+    var winnerLabel = winner === 'banker' ? '庄赢' : winner === 'player' ? '闲赢' : '和';
+    var w = winner === 'banker' ? 'B' : 'P';
+
+    // 从快照获取本局下注时的状态
+    var snap = snapshots.length > 0 ? snapshots[snapshots.length - 1].singleState : null;
+    var wasObserving = snap ? snap.observing : true;
+    var betSide = snap ? snap.side : null;
+    var betAmount = snap ? snap.bet : base;
+    var prevProfit = snap ? snap.profit : 0;
+
+    var text;
+    if (wasObserving || winner === 'tie') {
+        text = '<span class="tie-text">' + winnerLabel + '</span><span class="tie-text">观察不下</span>';
+    } else {
+        var won = s.profit > prevProfit;
+        var sideLabel = betSide === 'B' ? '庄' : '闲';
+        text = '<span class="' + (won ? 'win' : 'lose') + '">买' + sideLabel + (won ? '赢+' : '输-') + betAmount + '</span><span>' + winnerLabel + '</span>';
+    }
+    div.innerHTML = '<span>' + rounds + '</span>' + text +
+        '<span>' + (s.profit >= 0 ? '+' : '') + s.profit + '</span>';
+    list.insertBefore(div, list.firstChild);
+}
+
+function checkDanger(base) {
+    var d = document.getElementById('danger');
+    var msgs = [];
+    var maxR = parseInt(document.getElementById('maxRounds').value) || 10;
+
+    // 到达局数上限
+    if (rounds >= maxR) {
+        var total = currentMode === 'hedge' ? (state.a.profit + state.b.profit) : singleState.profit;
+        var done = document.getElementById('sessionDone');
+        var info = document.getElementById('doneInfo');
+        info.textContent = rounds + '局结束 | 总盈亏: ' + (total >= 0 ? '+' : '') + total + ' | ' + (total >= 0 ? '赢了就走!' : '止损离场!');
+        done.style.display = 'block';
+        done.style.background = total >= 0 ? '#27ae60' : '#e74c3c';
+    }
+
+    // 接近局数上限提醒
+    if (rounds >= maxR - 2 && rounds < maxR) {
+        msgs.push('⏰ 还剩' + (maxR - rounds) + '局! 准备离场');
+    }
+
+    // 以下警告只在对冲模式显示
+    if (currentMode === 'hedge') {
+        if (gameHistory.length >= 6) {
+            var last6 = gameHistory.slice(-6);
+            var bCount = last6.filter(function(x){ return x === 'B'; }).length;
+            var pCount = last6.filter(function(x){ return x === 'P'; }).length;
+            if (bCount >= 4 && pCount <= 2) {
+                msgs.push('❗ 疑似一闲两庄! 近6局 庄' + bCount + ':闲' + pCount + ' 建议暂停输的那边');
+            } else if (pCount >= 4 && bCount <= 2) {
+                msgs.push('❗ 疑似一庄两闲! 近6局 闲' + pCount + ':庄' + bCount + ' 建议暂停输的那边');
+            }
+        }
+        if (gameHistory.length >= 4) {
+            var last4 = gameHistory.slice(-4);
+            var allB = last4.every(function(x){ return x === 'B'; });
+            var allP = last4.every(function(x){ return x === 'P'; });
+            if (allB) msgs.push('❗ 连庄4局! B边在大量失血! 建议暂停B或离场');
+            if (allP) msgs.push('❗ 连闲4局! A边在大量失血! 建议暂停A或离场');
+        }
+        if (state.a.paused) msgs.push('⛔ A边已暂停(连输6局) 点击"恢复A边"重新开始');
+        if (state.b.paused) msgs.push('⛔ B边已暂停(连输6局) 点击"恢复B边"重新开始');
+    }
+
+    // 单边模式: 提前赢够了
+    var totalProfit = currentMode === 'hedge' ? (state.a.profit + state.b.profit) : singleState.profit;
+    if (totalProfit >= base * 5 && rounds < maxR) {
+        msgs.push('💰 已赚' + totalProfit + '(5倍基础注) 可以考虑提前走!');
+    }
+
+    if (msgs.length > 0) {
+        d.innerHTML = msgs.join('<br>');
+        d.style.display = 'block';
+    } else {
+        d.style.display = 'none';
+    }
+}
+
+function addHistory(winner, aBet, bBet, aResult, bResult) {
+    var list = document.getElementById('historyList');
+    var div = document.createElement('div');
+    div.className = 'h-row';
+    var total = state.a.profit + state.b.profit;
+    var aText = aResult === 'win' ? '<span class="win">A庄赢+' + aBet + '</span>' :
+                aResult === 'lose' ? '<span class="lose">A庄输-' + aBet + '</span>' :
+                '<span class="tie-text">A平</span>';
+    var bText = bResult === 'win' ? '<span class="win">B闲赢+' + bBet + '</span>' :
+                bResult === 'lose' ? '<span class="lose">B闲输-' + bBet + '</span>' :
+                '<span class="tie-text">B平</span>';
+    div.innerHTML = '<span>' + rounds + '</span>' + aText + bText +
+        '<span>' + (total >= 0 ? '+' : '') + total + '</span>';
+    list.insertBefore(div, list.firstChild);
+}
+
+function undo() {
+    if (!snapshots.length) return;
+    var snap = snapshots.pop();
+    state = snap.state;
+    rounds = snap.rounds;
+    gameHistory = snap.gameHistory;
+    singleState = snap.singleState;
+    var list = document.getElementById('historyList');
+    if (list.firstChild) list.removeChild(list.firstChild);
+    if (currentMode === 'hedge') {
+        updateAll();
+        document.getElementById('aRule').textContent = '已撤销';
+        document.getElementById('bRule').textContent = '已撤销';
+    } else {
+        updateSingleDisplay();
+        var el = document.getElementById('totalProfit');
+        el.textContent = (singleState.profit >= 0 ? '+' : '') + singleState.profit;
+        el.className = 'profit ' + (singleState.profit > 0 ? 'positive' : singleState.profit < 0 ? 'negative' : 'zero');
+        document.getElementById('roundCount').textContent = rounds;
+    }
+    document.getElementById('danger').style.display = 'none';
+}
+
+function resetAll() {
+    var base = getBase();
+    state = { a: newSide(base), b: newSide(base) };
+    singleState = { bet: base, loseStreak: 0, winStreak: 0, profit: 0, side: null, observing: true, rhythm: null };
+    rounds = 0; snapshots = []; gameHistory = [];
+    document.getElementById('historyList').innerHTML = '';
+    document.getElementById('aRule').textContent = '等待开局';
+    document.getElementById('bRule').textContent = '等待开局';
+    document.getElementById('warning').style.display = 'none';
+    document.getElementById('danger').style.display = 'none';
+    document.getElementById('sessionDone').style.display = 'none';
+    var el = document.getElementById('totalProfit');
+    el.textContent = '0'; el.className = 'profit zero';
+    document.getElementById('roundCount').textContent = '0';
+    if (currentMode === 'hedge') { updateAll(); }
+    else { updateSingleDisplay(); }
+}
+
+document.getElementById('baseUnit').addEventListener('change', resetAll);
+function toggleRef() { var el = document.getElementById('strategyRef'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+updateAll();
+</script>
+</body>
+</html>
