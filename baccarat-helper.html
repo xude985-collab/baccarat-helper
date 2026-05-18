@@ -760,6 +760,11 @@ function hourShenInfo(dayZhi, hourZhi) {
 }
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function isLuckyDay(dayZhi, monthZhi) { return dayZhi !== (monthZhi + 6) % 12; }
+function dayBadFlag(dayGan, dayZhi, monthZhi) {
+    if (dayZhi === (monthZhi + 6) % 12) return 'monthBreak';
+    if (CAISHEN[dayGan] === SHA_DIR_FULL[dayZhi % 4]) return 'caiShaSame';
+    return null;
+}
 
 function buildSeatGrid() {
     var grid = document.getElementById('seatGrid');
@@ -797,6 +802,8 @@ function renderAlmanac() {
     var xishen = XISHEN[dayGan];
     var shaFang = SHA_DIR_FULL[dayZhi % 4];
     var lucky = isLuckyDay(dayZhi, monthZhi);
+    var badFlag = dayBadFlag(dayGan, dayZhi, monthZhi);
+    var caiShaSame = badFlag === 'caiShaSame';
 
     document.getElementById('alDate').textContent =
         pad2(now.getMonth()+1) + '/' + pad2(now.getDate());
@@ -811,6 +818,10 @@ function renderAlmanac() {
         verdict.className = 'al-verdict bad';
         vMain.textContent = '✗ 不宜搏财 (今日月破日)';
         vSub.textContent = '日支冲月,大耗之日,建议休息';
+    } else if (caiShaSame) {
+        verdict.className = 'al-verdict bad';
+        vMain.textContent = '✗ 财煞同方,凶日不宜搏';
+        vSub.textContent = '财神位 ' + caishen + ' 与煞方撞在一起,煞气压财,容易输';
     } else if (info.good) {
         verdict.className = 'al-verdict good';
         vMain.textContent = '✓ 现 ' + DI_ZHI[hourZhi] + '时 适合搏财';
@@ -832,8 +843,12 @@ function renderAlmanac() {
         hoursBox.appendChild(chip);
     }
 
-    document.getElementById('alCaishen').textContent = caishen;
-    document.getElementById('alXishen').textContent = xishen;
+    var caishenEl = document.getElementById('alCaishen');
+    var xishenEl = document.getElementById('alXishen');
+    caishenEl.textContent = caishen + (caiShaSame ? ' ⚠' : '');
+    caishenEl.className = caiShaSame ? 'dir-val bad' : 'dir-val good';
+    xishenEl.textContent = xishen + (xishen === shaFang ? ' ⚠' : '');
+    xishenEl.className = (xishen === shaFang) ? 'dir-val bad' : 'dir-val good';
     document.getElementById('alShaFang').textContent = shaFang;
 
     var chongZhi = (dayZhi + 6) % 12;
