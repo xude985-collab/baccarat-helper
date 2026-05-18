@@ -105,6 +105,18 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .seat-feedback.mid { background: #2a2a4a; color: #ccc; }
 .seat-feedback.bad { background: #3a1e1e; color: #ff8a8a; animation: blink 1s infinite; font-weight: bold; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.natal-set-btn { width: 100%; padding: 10px; background: #0f3460; border: 1px dashed #ffd700; border-radius: 6px; color: #ffd700; font-size: 12px; cursor: pointer; }
+.natal-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 4px; margin-bottom: 4px; }
+.natal-inputs input { padding: 6px; background: #0f3460; border: 1px solid #444; border-radius: 4px; color: #fff; font-size: 12px; text-align: center; width: 100%; }
+.natal-save { padding: 6px 12px; background: #ffd700; border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer; }
+.natal-hint { font-size: 10px; color: #888; }
+.natal-line { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; gap: 8px; }
+.natal-line .natal-label { color: #888; flex-shrink: 0; }
+.natal-line span:last-child { text-align: right; }
+.natal-line .hi { color: #ffd700; font-weight: bold; }
+.natal-edit { padding: 2px 8px; background: transparent; border: 1px solid #444; border-radius: 4px; color: #888; font-size: 10px; cursor: pointer; margin-top: 4px; float: right; }
+.natal-good { color: #2ecc71; font-weight: bold; }
+.natal-bad { color: #ff8a8a; font-weight: bold; }
 .al-foot { font-size: 10px; color: #666; text-align: center; margin-top: 6px; }
 </style>
 </head>
@@ -127,17 +139,40 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 <div class="al-hours" id="alHours"></div>
 </div>
 <div class="al-section">
-<div class="sec-title">🧭 今日方位</div>
+<div class="sec-title">🧭 今日方位 (一整天不变,搏财朝偏财位)</div>
 <div class="al-dirs">
-<div class="al-dir"><div class="dir-label">💰财神</div><div class="dir-val good" id="alCaishen">--</div></div>
-<div class="al-dir"><div class="dir-label">💕喜神</div><div class="dir-val good" id="alXishen">--</div></div>
-<div class="al-dir"><div class="dir-label">⚠煞方</div><div class="dir-val bad" id="alShaFang">--</div></div>
+<div class="al-dir"><div class="dir-label">💰偏财位</div><div class="dir-val good" id="alCaishen">--</div></div>
+<div class="al-dir"><div class="dir-label">💕次吉位</div><div class="dir-val good" id="alXishen">--</div></div>
+<div class="al-dir"><div class="dir-label">⚠避坐位</div><div class="dir-val bad" id="alShaFang">--</div></div>
 </div>
 </div>
 <div class="al-section">
-<div class="sec-title">🪑 我的坐向 (点你正面朝的方向)</div>
+<div class="sec-title">👀 我脸朝 (例:坐北朝南就点"南"↓)</div>
 <div class="seat-grid" id="seatGrid"></div>
 <div class="seat-feedback mid" id="seatFeedback">未选择坐向</div>
+</div>
+<div class="al-section">
+<div class="sec-title">📅 你的本命 (输入一次永久保存,以后自动算)</div>
+<div id="natalView">
+<button class="natal-set-btn" onclick="showNatalForm()">📅 点这里输入你的出生年月日 →</button>
+</div>
+<div id="natalForm" style="display:none;">
+<div class="natal-inputs">
+<input type="number" id="bYear" placeholder="年">
+<input type="number" id="bMonth" placeholder="月">
+<input type="number" id="bDay" placeholder="日">
+<button class="natal-save" onclick="saveNatal()">保存</button>
+</div>
+<div class="natal-hint">阳历(公历),不要农历;不需要时辰</div>
+</div>
+<div id="natalInfo" style="display:none;">
+<div class="natal-line"><span class="natal-label">你的本命</span><span id="natalGZ"></span></div>
+<div class="natal-line"><span class="natal-label">本命偏财位</span><span class="hi" id="natalCai"></span></div>
+<div class="natal-line"><span class="natal-label">你的个人吉时</span><span id="natalLuckyHours"></span></div>
+<div class="natal-line"><span class="natal-label">今日对你</span><span id="natalToday"></span></div>
+<button class="natal-edit" onclick="showNatalForm()">改</button>
+<div style="clear:both"></div>
+</div>
 </div>
 <div class="al-foot" id="alChong">冲煞: --</div>
 </div>
@@ -697,6 +732,7 @@ var CAISHEN = ['东北','东北','正西','正西','正北','正北','正东','�
 var XISHEN  = ['东北','西北','西南','正南','东南','东北','西北','西南','正南','东南'];
 var SHA_DIR_FULL = ['正南','正东','正北','正西'];
 var SEAT_LAYOUT = ['西北','正北','东北','正西',null,'正东','西南','正南','东南'];
+var SEAT_ARROW = {'西北':'↖','正北':'↑','东北':'↗','正西':'←','正东':'→','西南':'↙','正南':'↓','东南':'↘'};
 var DAY_EPOCH = new Date(1900, 0, 1).getTime();
 var DAY_EPOCH_GZ = 10;
 var userSeat = localStorage.getItem('userSeat') || null;
@@ -733,10 +769,10 @@ function buildSeatGrid() {
         btn.className = 'seat-btn';
         if (!dir) {
             btn.className += ' center';
-            btn.textContent = '👤我';
+            btn.innerHTML = '<span style="font-size:16px">👤</span><br>我';
             btn.disabled = true;
         } else {
-            btn.textContent = dir;
+            btn.innerHTML = '<span style="font-size:18px;display:block;line-height:1.2">' + SEAT_ARROW[dir] + '</span>' + dir;
             btn.setAttribute('data-dir', dir);
             btn.onclick = function() {
                 userSeat = (userSeat === dir) ? null : dir;
@@ -817,20 +853,22 @@ function renderAlmanac() {
     var fb = document.getElementById('seatFeedback');
     if (!userSeat) {
         fb.className = 'seat-feedback mid';
-        fb.textContent = '👇 点上面九宫格,告诉我你正面朝哪边';
+        fb.textContent = '👇 点你脸朝的方向 (坐北朝南就点"南")';
     } else if (userSeat === shaFang) {
         fb.className = 'seat-feedback bad';
-        fb.textContent = '⚠ 你正坐凶方 (煞' + shaFang + ') — 强烈建议换位!';
+        fb.textContent = '⚠ 你正面朝凶方 (煞' + shaFang + ') — 转个方向坐!';
     } else if (userSeat === caishen) {
         fb.className = 'seat-feedback good';
-        fb.textContent = '💰 你正面朝财神位 ' + caishen + ',大吉!';
+        fb.textContent = '💰 你正面朝偏财位 ' + caishen + ',大吉! 此向搏财';
     } else if (userSeat === xishen) {
         fb.className = 'seat-feedback good';
-        fb.textContent = '💕 你正面朝喜神位 ' + xishen + ',吉!';
+        fb.textContent = '💕 你正面朝次吉位 ' + xishen + ',小吉 (求财还是偏财位更好)';
     } else {
         fb.className = 'seat-feedback mid';
-        fb.textContent = '坐向 ' + userSeat + ' 平 (无凶但也无大吉)';
+        fb.textContent = '你面朝 ' + userSeat + ',平 (无凶但也无大吉)';
     }
+
+    renderNatal(dayZhi);
 }
 
 function toggleAlmanac() {
@@ -839,6 +877,102 @@ function toggleAlmanac() {
     var hidden = body.style.display === 'none';
     body.style.display = hidden ? '' : 'none';
     arrow.textContent = hidden ? '▼' : '▶';
+}
+
+function zhiRelation(a, b) {
+    if (a === b) return 'same';
+    if ((a + 6) % 12 === b) return 'chong';
+    var sanhe = [[2,6,10],[5,9,1],[8,0,4],[11,3,7]];
+    for (var i = 0; i < sanhe.length; i++) {
+        if (sanhe[i].indexOf(a) >= 0 && sanhe[i].indexOf(b) >= 0) return 'sanhe';
+    }
+    var liuhe = [[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]];
+    for (var j = 0; j < liuhe.length; j++) {
+        if (liuhe[j].indexOf(a) >= 0 && liuhe[j].indexOf(b) >= 0) return 'liuhe';
+    }
+    return 'ping';
+}
+function getNatal() {
+    var raw = localStorage.getItem('natal');
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch(e) { return null; }
+}
+function showNatalForm() {
+    document.getElementById('natalView').style.display = 'none';
+    document.getElementById('natalInfo').style.display = 'none';
+    document.getElementById('natalForm').style.display = 'block';
+    var n = getNatal();
+    if (n) {
+        document.getElementById('bYear').value = n.y;
+        document.getElementById('bMonth').value = n.m;
+        document.getElementById('bDay').value = n.d;
+    }
+}
+function saveNatal() {
+    var y = parseInt(document.getElementById('bYear').value);
+    var m = parseInt(document.getElementById('bMonth').value);
+    var d = parseInt(document.getElementById('bDay').value);
+    if (!y || !m || !d || y < 1900 || y > 2030 || m < 1 || m > 12 || d < 1 || d > 31) {
+        alert('请正确填写出生年月日 (阳历)');
+        return;
+    }
+    localStorage.setItem('natal', JSON.stringify({y:y, m:m, d:d}));
+    document.getElementById('natalForm').style.display = 'none';
+    renderAlmanac();
+}
+function renderNatal(todayDayZhi) {
+    var n = getNatal();
+    var viewBox = document.getElementById('natalView');
+    var infoBox = document.getElementById('natalInfo');
+    var formBox = document.getElementById('natalForm');
+    var formOpen = formBox.style.display === 'block';
+    if (!n) {
+        if (!formOpen) {
+            viewBox.style.display = '';
+            infoBox.style.display = 'none';
+        }
+        return;
+    }
+    viewBox.style.display = 'none';
+    if (!formOpen) infoBox.style.display = '';
+
+    var bDate = new Date(n.y, n.m - 1, n.d);
+    var bDayIdx = ganZhiDay(bDate);
+    var bDayGan = bDayIdx % 10, bDayZhi = bDayIdx % 12;
+    var bYearIdx = ganZhiYear(bDate);
+    var bYearZhi = bYearIdx % 12;
+
+    document.getElementById('natalGZ').innerHTML =
+        TIAN_GAN[bYearIdx%10] + DI_ZHI[bYearZhi] + '年 ' +
+        TIAN_GAN[bDayGan] + DI_ZHI[bDayZhi] + '日 (属<span class="hi">' + ZODIAC[bYearZhi] + '</span>)';
+    document.getElementById('natalCai').textContent = CAISHEN[bDayGan];
+
+    var goodHours = [];
+    for (var h = 0; h < 12; h++) {
+        var r = zhiRelation(bDayZhi, h);
+        if (r === 'sanhe' || r === 'liuhe') {
+            goodHours.push(DI_ZHI[h] + '(' + (r==='sanhe'?'三合':'六合') + ')');
+        }
+    }
+    document.getElementById('natalLuckyHours').innerHTML =
+        '<span class="natal-good">' + (goodHours.length ? goodHours.join('、') : '无') + '</span>';
+
+    var rel = zhiRelation(bDayZhi, todayDayZhi);
+    var chongBenming = (bYearZhi + 6) % 12 === todayDayZhi;
+    var todayBox = document.getElementById('natalToday');
+    if (chongBenming) {
+        todayBox.innerHTML = '<span class="natal-bad">⚠ 今日冲你本命(属' + ZODIAC[bYearZhi] + '),大耗日!</span>';
+    } else if (rel === 'chong') {
+        todayBox.innerHTML = '<span class="natal-bad">⚠ 冲你日柱,小不顺</span>';
+    } else if (rel === 'sanhe') {
+        todayBox.innerHTML = '<span class="natal-good">✓ 三合! 今日大利,可重点搏</span>';
+    } else if (rel === 'liuhe') {
+        todayBox.innerHTML = '<span class="natal-good">✓ 六合! 今日合你</span>';
+    } else if (rel === 'same') {
+        todayBox.innerHTML = '<span class="natal-good">本命日,运势稳</span>';
+    } else {
+        todayBox.innerHTML = '<span style="color:#aaa">今日 平 (无大利无大忌)</span>';
+    }
 }
 
 buildSeatGrid();
