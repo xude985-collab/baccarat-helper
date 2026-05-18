@@ -78,10 +78,11 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .al-head .clickable { cursor: pointer; user-select: none; }
 .al-verdict { text-align: center; padding: 10px 8px; border-radius: 8px; margin-bottom: 8px; font-weight: bold; }
 .al-verdict.good { background: linear-gradient(135deg, #1e3a2e, #1a2e4e); color: #2ecc71; border: 1px solid #2ecc71; }
-.al-verdict.bad { background: linear-gradient(135deg, #3a1e1e, #4e1a2e); color: #ff8a8a; border: 1px solid #e74c3c; animation: alertGlow 1.5s infinite; }
+.al-verdict.bad { background: linear-gradient(135deg, #c0392b, #ff3838); color: #fff; border: 2px solid #ff0000; animation: alertGlow 1s infinite; font-weight: bold; }
+.al-verdict.bad .v-sub { color: #ffe8e8; font-weight: normal; }
 .al-verdict .v-main { font-size: 15px; }
 .al-verdict .v-sub { font-size: 11px; font-weight: normal; color: #ccc; margin-top: 4px; }
-@keyframes alertGlow { 0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)} 50%{box-shadow:0 0 12px rgba(231,76,60,0.7)} }
+@keyframes alertGlow { 0%,100%{box-shadow:0 0 0 rgba(255,0,0,0)} 50%{box-shadow:0 0 18px rgba(255,0,0,0.9)} }
 .al-section { margin-bottom: 8px; }
 .al-section .sec-title { color: #ffd700; font-size: 11px; margin-bottom: 4px; }
 .al-hours { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -93,7 +94,7 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .al-dir .dir-label { color: #888; font-size: 10px; }
 .al-dir .dir-val { font-weight: bold; font-size: 13px; }
 .al-dir .dir-val.good { color: #2ecc71; }
-.al-dir .dir-val.bad { color: #ff8a8a; }
+.al-dir .dir-val.bad { color: #ff3838; }
 .seat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 4px; }
 .seat-btn { padding: 10px 4px; background: #0f3460; border: 1px solid #2a2a4a; border-radius: 6px; color: #aaa; font-size: 11px; cursor: pointer; touch-action: manipulation; }
 .seat-btn.center { background: #1a1a2e; cursor: default; color: #ffd700; font-size: 14px; }
