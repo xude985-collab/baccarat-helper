@@ -73,11 +73,75 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .strategy-ref .ref-rule { color: #4ecdc4; }
 .ref-toggle { text-align: center; margin-bottom: 8px; }
 .ref-toggle button { background: none; border: 1px solid #444; color: #888; font-size: 11px; padding: 3px 12px; border-radius: 4px; cursor: pointer; }
+.almanac { background: linear-gradient(135deg, #2a1a3e, #1a2a4e); border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #3a2a5e; }
+.al-head { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 6px; }
+.al-head .clickable { cursor: pointer; user-select: none; }
+.al-verdict { text-align: center; padding: 10px 8px; border-radius: 8px; margin-bottom: 8px; font-weight: bold; }
+.al-verdict.good { background: linear-gradient(135deg, #1e3a2e, #1a2e4e); color: #2ecc71; border: 1px solid #2ecc71; }
+.al-verdict.bad { background: linear-gradient(135deg, #3a1e1e, #4e1a2e); color: #ff8a8a; border: 1px solid #e74c3c; animation: alertGlow 1.5s infinite; }
+.al-verdict .v-main { font-size: 15px; }
+.al-verdict .v-sub { font-size: 11px; font-weight: normal; color: #ccc; margin-top: 4px; }
+@keyframes alertGlow { 0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)} 50%{box-shadow:0 0 12px rgba(231,76,60,0.7)} }
+.al-section { margin-bottom: 8px; }
+.al-section .sec-title { color: #ffd700; font-size: 11px; margin-bottom: 4px; }
+.al-hours { display: flex; flex-wrap: wrap; gap: 4px; }
+.al-hour-chip { padding: 4px 8px; border-radius: 6px; background: #0f3460; color: #4ecdc4; font-size: 11px; }
+.al-hour-chip.now { background: #ffd700; color: #000; font-weight: bold; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.7; transform:scale(0.95)} }
+.al-dirs { display: flex; justify-content: space-around; padding: 6px 0; }
+.al-dir { text-align: center; flex: 1; }
+.al-dir .dir-label { color: #888; font-size: 10px; }
+.al-dir .dir-val { font-weight: bold; font-size: 13px; }
+.al-dir .dir-val.good { color: #2ecc71; }
+.al-dir .dir-val.bad { color: #ff8a8a; }
+.seat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 4px; }
+.seat-btn { padding: 10px 4px; background: #0f3460; border: 1px solid #2a2a4a; border-radius: 6px; color: #aaa; font-size: 11px; cursor: pointer; touch-action: manipulation; }
+.seat-btn.center { background: #1a1a2e; cursor: default; color: #ffd700; font-size: 14px; }
+.seat-btn.is-good { background: #1e3a2e; color: #2ecc71; border-color: #2ecc71; }
+.seat-btn.is-bad { background: #3a1e1e; color: #ff8a8a; border-color: #e74c3c; }
+.seat-btn.selected { border-width: 2px; border-color: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.5); }
+.seat-feedback { margin-top: 6px; padding: 6px; border-radius: 6px; font-size: 12px; text-align: center; }
+.seat-feedback.good { background: #1e3a2e; color: #2ecc71; }
+.seat-feedback.mid { background: #2a2a4a; color: #ccc; }
+.seat-feedback.bad { background: #3a1e1e; color: #ff8a8a; animation: blink 1s infinite; font-weight: bold; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.al-foot { font-size: 10px; color: #666; text-align: center; margin-top: 6px; }
 </style>
 </head>
 <body>
 <div class="container">
 <h1>百家乐助手</h1>
+
+<div class="almanac" id="almanac">
+<div class="al-head">
+<span>🌙 <span id="alDate"></span> · <span id="alGZ"></span></span>
+<span class="clickable" onclick="toggleAlmanac()">折叠 <span id="alArrow">▼</span></span>
+</div>
+<div id="alBody">
+<div class="al-verdict" id="alVerdict">
+<div class="v-main" id="alVMain">--</div>
+<div class="v-sub" id="alVSub">--</div>
+</div>
+<div class="al-section">
+<div class="sec-title">⏰ 偏财时段 (黄道吉时)</div>
+<div class="al-hours" id="alHours"></div>
+</div>
+<div class="al-section">
+<div class="sec-title">🧭 今日方位</div>
+<div class="al-dirs">
+<div class="al-dir"><div class="dir-label">💰财神</div><div class="dir-val good" id="alCaishen">--</div></div>
+<div class="al-dir"><div class="dir-label">💕喜神</div><div class="dir-val good" id="alXishen">--</div></div>
+<div class="al-dir"><div class="dir-label">⚠煞方</div><div class="dir-val bad" id="alShaFang">--</div></div>
+</div>
+</div>
+<div class="al-section">
+<div class="sec-title">🪑 我的坐向 (点你正面朝的方向)</div>
+<div class="seat-grid" id="seatGrid"></div>
+<div class="seat-feedback mid" id="seatFeedback">未选择坐向</div>
+</div>
+<div class="al-foot" id="alChong">冲煞: --</div>
+</div>
+</div>
 
 <div class="ref-toggle" style="display:none;"><button onclick="toggleRef()">策略表 ▼</button></div>
 <div class="strategy-ref" id="strategyRef" style="display:none;">
@@ -621,6 +685,167 @@ function resetAll() {
 
 document.getElementById('baseUnit').addEventListener('change', resetAll);
 function toggleRef() { var el = document.getElementById('strategyRef'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+
+// ---------- 黄历 ----------
+var TIAN_GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+var DI_ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+var ZODIAC = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+var HOUR_RANGES = ['23-01','01-03','03-05','05-07','07-09','09-11','11-13','13-15','15-17','17-19','19-21','21-23'];
+var SHEN12 = ['青龙','明堂','天刑','朱雀','金匮','天德','白虎','玉堂','天牢','玄武','司命','勾陈'];
+var SHEN_GOOD = [true,true,false,false,true,true,false,true,false,false,true,false];
+var CAISHEN = ['东北','东北','正西','正西','正北','正北','正东','正东','正南','正南'];
+var XISHEN  = ['东北','西北','西南','正南','东南','东北','西北','西南','正南','东南'];
+var SHA_DIR_FULL = ['正南','正东','正北','正西'];
+var SEAT_LAYOUT = ['西北','正北','东北','正西',null,'正东','西南','正南','东南'];
+var DAY_EPOCH = new Date(1900, 0, 1).getTime();
+var DAY_EPOCH_GZ = 10;
+var userSeat = localStorage.getItem('userSeat') || null;
+
+function ganZhiDay(d) {
+    var ms = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    var days = Math.round((ms - DAY_EPOCH) / 86400000);
+    return ((DAY_EPOCH_GZ + days) % 60 + 60) % 60;
+}
+function ganZhiYear(d) {
+    var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    if (m === 1 || (m === 2 && day < 4)) y--;
+    return ((y - 1984) % 60 + 60) % 60;
+}
+function getMonthZhi(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    var nodes = [0, 6, 4, 6, 5, 6, 6, 7, 8, 8, 8, 7, 7];
+    return day >= nodes[m] ? (m % 12) : ((m - 1) % 12);
+}
+function nowHourZhi(d) { return Math.floor((d.getHours() + 1) / 2) % 12; }
+function hourShenInfo(dayZhi, hourZhi) {
+    var qlStart = (dayZhi * 2 + 8) % 12;
+    var offset = (hourZhi - qlStart + 12) % 12;
+    return { name: SHEN12[offset], good: SHEN_GOOD[offset] };
+}
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function isLuckyDay(dayZhi, monthZhi) { return dayZhi !== (monthZhi + 6) % 12; }
+
+function buildSeatGrid() {
+    var grid = document.getElementById('seatGrid');
+    grid.innerHTML = '';
+    SEAT_LAYOUT.forEach(function(dir) {
+        var btn = document.createElement('button');
+        btn.className = 'seat-btn';
+        if (!dir) {
+            btn.className += ' center';
+            btn.textContent = '👤我';
+            btn.disabled = true;
+        } else {
+            btn.textContent = dir;
+            btn.setAttribute('data-dir', dir);
+            btn.onclick = function() {
+                userSeat = (userSeat === dir) ? null : dir;
+                if (userSeat) localStorage.setItem('userSeat', userSeat);
+                else localStorage.removeItem('userSeat');
+                renderAlmanac();
+            };
+        }
+        grid.appendChild(btn);
+    });
+}
+
+function renderAlmanac() {
+    var now = new Date();
+    var dayIdx = ganZhiDay(now);
+    var dayGan = dayIdx % 10, dayZhi = dayIdx % 12;
+    var yearIdx = ganZhiYear(now);
+    var monthZhi = getMonthZhi(now);
+    var hourZhi = nowHourZhi(now);
+    var info = hourShenInfo(dayZhi, hourZhi);
+    var caishen = CAISHEN[dayGan];
+    var xishen = XISHEN[dayGan];
+    var shaFang = SHA_DIR_FULL[dayZhi % 4];
+    var lucky = isLuckyDay(dayZhi, monthZhi);
+
+    document.getElementById('alDate').textContent =
+        pad2(now.getMonth()+1) + '/' + pad2(now.getDate());
+    document.getElementById('alGZ').textContent =
+        TIAN_GAN[yearIdx%10] + DI_ZHI[yearIdx%12] + '年 ' +
+        TIAN_GAN[dayGan] + DI_ZHI[dayZhi] + '日(属' + ZODIAC[dayZhi] + ')';
+
+    var verdict = document.getElementById('alVerdict');
+    var vMain = document.getElementById('alVMain');
+    var vSub = document.getElementById('alVSub');
+    if (!lucky) {
+        verdict.className = 'al-verdict bad';
+        vMain.textContent = '✗ 不宜搏财 (今日月破日)';
+        vSub.textContent = '日支冲月,大耗之日,建议休息';
+    } else if (info.good) {
+        verdict.className = 'al-verdict good';
+        vMain.textContent = '✓ 现 ' + DI_ZHI[hourZhi] + '时 适合搏财';
+        vSub.textContent = info.name + ' 黄道吉时 · 财神在 ' + caishen;
+    } else {
+        verdict.className = 'al-verdict bad';
+        vMain.textContent = '✗ 现 ' + DI_ZHI[hourZhi] + '时 不宜下注';
+        vSub.textContent = info.name + ' 黑道凶时,等下个吉时再战';
+    }
+
+    var hoursBox = document.getElementById('alHours');
+    hoursBox.innerHTML = '';
+    for (var h = 0; h < 12; h++) {
+        var hi = hourShenInfo(dayZhi, h);
+        if (!hi.good) continue;
+        var chip = document.createElement('span');
+        chip.className = 'al-hour-chip' + (h === hourZhi ? ' now' : '');
+        chip.textContent = DI_ZHI[h] + ' ' + HOUR_RANGES[h];
+        hoursBox.appendChild(chip);
+    }
+
+    document.getElementById('alCaishen').textContent = caishen;
+    document.getElementById('alXishen').textContent = xishen;
+    document.getElementById('alShaFang').textContent = shaFang;
+
+    var chongZhi = (dayZhi + 6) % 12;
+    var chongGan = (dayGan + 6) % 10;
+    document.getElementById('alChong').textContent =
+        '冲' + ZODIAC[chongZhi] + '(' + TIAN_GAN[chongGan] + DI_ZHI[chongZhi] + ') · 属' + ZODIAC[chongZhi] + '者今日避战';
+
+    var btns = document.querySelectorAll('#seatGrid .seat-btn');
+    btns.forEach(function(btn) {
+        btn.className = btn.className.replace(/\s*(selected|is-good|is-bad)/g, '');
+        var dir = btn.getAttribute('data-dir');
+        if (!dir) return;
+        if (dir === shaFang) btn.className += ' is-bad';
+        else if (dir === caishen || dir === xishen) btn.className += ' is-good';
+        if (dir === userSeat) btn.className += ' selected';
+    });
+    var fb = document.getElementById('seatFeedback');
+    if (!userSeat) {
+        fb.className = 'seat-feedback mid';
+        fb.textContent = '👇 点上面九宫格,告诉我你正面朝哪边';
+    } else if (userSeat === shaFang) {
+        fb.className = 'seat-feedback bad';
+        fb.textContent = '⚠ 你正坐凶方 (煞' + shaFang + ') — 强烈建议换位!';
+    } else if (userSeat === caishen) {
+        fb.className = 'seat-feedback good';
+        fb.textContent = '💰 你正面朝财神位 ' + caishen + ',大吉!';
+    } else if (userSeat === xishen) {
+        fb.className = 'seat-feedback good';
+        fb.textContent = '💕 你正面朝喜神位 ' + xishen + ',吉!';
+    } else {
+        fb.className = 'seat-feedback mid';
+        fb.textContent = '坐向 ' + userSeat + ' 平 (无凶但也无大吉)';
+    }
+}
+
+function toggleAlmanac() {
+    var body = document.getElementById('alBody');
+    var arrow = document.getElementById('alArrow');
+    var hidden = body.style.display === 'none';
+    body.style.display = hidden ? '' : 'none';
+    arrow.textContent = hidden ? '▼' : '▶';
+}
+
+buildSeatGrid();
+renderAlmanac();
+setInterval(renderAlmanac, 30000);
+// ---------- 黄历 end ----------
+
 updateAll();
 </script>
 </body>
