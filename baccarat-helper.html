@@ -184,7 +184,7 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 <div class="ref-title">策略速查</div>
 <div class="ref-row"><span class="ref-label">两庄两闲/三庄三闲</span><span class="ref-rule">对冲AB | 你的5条 | 幸运注10%</span></div>
 <div class="ref-row"><span class="ref-label">1:2(庄闲闲)</span><span class="ref-rule">单边跟节奏 | 你的3条 | 幸运注10%</span></div>
-<div class="ref-row"><span class="ref-label">连庄/连闲</span><span class="ref-rule">单边跟龙 | 反马丁 | 幸运注10%</span></div>
+<div class="ref-row"><span class="ref-label">连庄/连闲/下雨</span><span class="ref-rule">看近5局多数派 | 反马丁 | 幸运注10%</span></div>
 <div class="ref-row"><span class="ref-label">一庄一闲</span><span class="ref-rule">单边买反 | 反马丁 | 幸运注10%</span></div>
 <div style="margin-top:6px;padding-top:6px;border-top:1px solid #333;">
 <div class="ref-row"><span style="color:#e94560;">5条:</span><span>输不变3输倍|赢倍|2连赢归零|震荡不倍|三层首赢不倍</span></div>
@@ -196,7 +196,7 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 <div class="mode-bar">
 <div class="mode-btn active" id="modeHedge" onclick="setMode('hedge')">对冲<br><span style="font-size:9px">两庄两闲|5条</span></div>
 <div class="mode-btn" id="modeFollow" onclick="setMode('follow')">跟节奏<br><span style="font-size:9px">1:2模式|3条</span></div>
-<div class="mode-btn" id="modeDragon" onclick="setMode('dragon')">跟龙<br><span style="font-size:9px">连庄连闲|反马丁</span></div>
+<div class="mode-btn" id="modeDragon" onclick="setMode('dragon')">跟龙<br><span style="font-size:9px">长龙/下雨|反马丁</span></div>
 <div class="mode-btn" id="modeAlt" onclick="setMode('alt')">买反<br><span style="font-size:9px">一庄一闲|反马丁</span></div>
 </div>
 
@@ -342,7 +342,15 @@ function calcSingleSide() {
         singleState.observing = false;
     } else if (currentMode === 'dragon') {
         if (h.length < 2) { singleState.observing = true; return; }
-        singleState.side = h[h.length - 1];
+        var win = h.slice(-5);
+        var bN = 0, pN = 0;
+        for (var k = 0; k < win.length; k++) {
+            if (win[k] === 'B') bN++;
+            else if (win[k] === 'P') pN++;
+        }
+        if (bN > pN) singleState.side = 'B';
+        else if (pN > bN) singleState.side = 'P';
+        else singleState.side = h[h.length - 1];
         singleState.observing = false;
     } else if (currentMode === 'alt') {
         if (h.length < 2) { singleState.observing = true; return; }
