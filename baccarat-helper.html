@@ -58,7 +58,8 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .bottom-bar { display: flex; gap: 8px; margin-top: 10px; justify-content: center; }
 .bottom-btn { padding: 8px 20px; background: #333; color: #aaa; border: 1px solid #444; border-radius: 6px; font-size: 12px; cursor: pointer; touch-action: manipulation; }
 .undo-btn { border-color: #f39c12; color: #f39c12; }
-.mode-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+.mode-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.mode-bar .mode-btn { flex: 1 1 30%; min-width: 90px; }
 .mode-btn { padding: 8px 4px; border: 2px solid #444; border-radius: 8px; background: #16213e; color: #aaa; font-size: 11px; text-align: center; cursor: pointer; touch-action: manipulation; }
 .mode-btn.active { border-color: #ffd700; color: #ffd700; background: #1a1a3e; }
 .single-bet { background: #16213e; border-radius: 10px; padding: 12px; margin-bottom: 10px; text-align: center; display: none; }
@@ -179,25 +180,55 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 </div>
 </div>
 
-<div class="ref-toggle" style="display:none;"><button onclick="toggleRef()">策略表 ▼</button></div>
-<div class="strategy-ref" id="strategyRef" style="display:none;">
-<div class="ref-title">策略速查</div>
-<div class="ref-row"><span class="ref-label">两庄两闲/三庄三闲</span><span class="ref-rule">对冲AB | 你的5条 | 幸运注10%</span></div>
-<div class="ref-row"><span class="ref-label">1:2(庄闲闲)</span><span class="ref-rule">单边跟节奏 | 你的3条 | 幸运注10%</span></div>
-<div class="ref-row"><span class="ref-label">连庄/连闲/下雨</span><span class="ref-rule">看近5局多数派 | 反马丁 | 幸运注10%</span></div>
-<div class="ref-row"><span class="ref-label">一庄一闲</span><span class="ref-rule">单边买反 | 反马丁 | 幸运注10%</span></div>
-<div style="margin-top:6px;padding-top:6px;border-top:1px solid #333;">
-<div class="ref-row"><span style="color:#e94560;">5条:</span><span>输不变3输倍|赢倍|2连赢归零|震荡不倍|三层首赢不倍</span></div>
-<div class="ref-row"><span style="color:#f39c12;">3条:</span><span>输不变3输倍|赢倍|2连赢归零</span></div>
-<div class="ref-row"><span style="color:#4ecdc4;">反马丁:</span><span>输回base|赢倍|3连赢归零</span></div>
-</div>
-</div>
-
 <div class="mode-bar">
-<div class="mode-btn active" id="modeHedge" onclick="setMode('hedge')">对冲<br><span style="font-size:9px">两庄两闲|5条</span></div>
+<div class="mode-btn active" id="modeGuide" onclick="setMode('guide')">稳健打法<br><span style="font-size:9px">找庄庄|赢就停</span></div>
+<div class="mode-btn" id="modeHedge" onclick="setMode('hedge')">对冲<br><span style="font-size:9px">两庄两闲|5条</span></div>
 <div class="mode-btn" id="modeFollow" onclick="setMode('follow')">跟节奏<br><span style="font-size:9px">1:2模式|3条</span></div>
 <div class="mode-btn" id="modeDragon" onclick="setMode('dragon')">跟龙<br><span style="font-size:9px">长龙/下雨|反马丁</span></div>
 <div class="mode-btn" id="modeAlt" onclick="setMode('alt')">买反<br><span style="font-size:9px">一庄一闲|反马丁</span></div>
+<div class="mode-btn" id="modeMart" onclick="setMode('mart')">倍投<br><span style="font-size:9px">输加倍|赢面最大</span></div>
+</div>
+
+<div id="ruleBar" style="background:#0f3460;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.6;color:#cde;border-left:3px solid #ffd700;"></div>
+
+<div class="guide" id="guidePanel" style="display:none;">
+<div style="background:linear-gradient(135deg,#1e3a2e,#1a2e4e);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #2ecc71;">
+<div style="font-size:12px;color:#9fe;line-height:1.6;">① 找一张<b>已开出 庄庄/庄闲</b>(押庄) 或 <b>闲闲/闲庄</b>(押闲) 的桌子 → ② 从下一把开始照提示下注 → ③ <b>赢一把立刻停</b>,等下个开头再来</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+<button class="bottom-btn" id="guideSideB" onclick="guideSetSide('B')" style="padding:12px;border-color:#e94560;font-size:14px;">这桌押庄<br><span style="font-size:9px;color:#888">庄庄/庄闲开头</span></button>
+<button class="bottom-btn" id="guideSideP" onclick="guideSetSide('P')" style="padding:12px;border-color:#4ecdc4;font-size:14px;">这桌押闲<br><span style="font-size:9px;color:#888">闲闲/闲庄开头</span></button>
+</div>
+<div style="background:#16213e;border-radius:12px;padding:18px;text-align:center;margin-bottom:10px;">
+<div id="guideAction" style="font-size:15px;color:#ffd700;font-weight:bold;">先选这桌押庄还是押闲</div>
+<div id="guideBet" style="font-size:40px;font-weight:bold;color:#2ecc71;margin:8px 0;">—</div>
+<div id="guideStep" style="font-size:12px;color:#888;">最多打 4 把</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+<button class="result-btn btn-banker" onclick="guidePlay('B')">庄赢</button>
+<button class="result-btn btn-player" onclick="guidePlay('P')">闲赢</button>
+<button class="result-btn btn-tie" onclick="guidePlay('T')">和</button>
+</div>
+<div style="background:#16213e;border-radius:10px;padding:12px;text-align:center;margin-bottom:10px;">
+<div style="font-size:11px;color:#888;">本桌这局</div>
+<div id="guideSession" style="font-size:22px;font-weight:bold;color:#666;">0</div>
+<div style="font-size:11px;color:#888;margin-top:6px;">累计总盈亏 (所有桌)</div>
+<div id="guideTotal" style="font-size:26px;font-weight:bold;color:#666;">0</div>
+</div>
+<div class="bottom-bar">
+<button class="bottom-btn" id="guideNewBtn" onclick="guideNewTable()">换桌/新一局</button>
+<button class="bottom-btn undo-btn" onclick="guideReset()">清零重来</button>
+</div>
+</div>
+
+<div class="mart-setup" id="martSetup" style="display:none;background:#16213e;border-radius:10px;padding:10px;margin-bottom:10px;">
+<div style="font-size:11px;color:#888;margin-bottom:6px;">我固定押哪边 (开打前选好,中途不换):</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+<button class="bottom-btn" id="martSideB" onclick="setMartSide('B')" style="padding:10px;border-color:#e94560;">押庄</button>
+<button class="bottom-btn" id="martSideP" onclick="setMartSide('P')" style="padding:10px;border-color:#4ecdc4;">押闲</button>
+</div>
+<label style="font-size:11px;color:#888;display:flex;align-items:center;gap:6px;justify-content:center;">封顶层数 (本金扛几层就填几,到顶不再加倍)
+<input type="number" id="capLayers" value="4" style="width:50px;padding:5px;border-radius:6px;border:1px solid #444;background:#0f3460;color:#fff;text-align:center;"></label>
 </div>
 
 <div class="settings">
@@ -266,18 +297,64 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
   5. 第三层(base×4)以上，通过输进入的→第一次赢不加倍，之后恢复正常
 */
 
-var currentMode = 'hedge'; // hedge, follow, dragon, alt
-var singleState = { bet: 500, loseStreak: 0, winStreak: 0, profit: 0, side: null, observing: true, rhythm: null };
+var currentMode = 'hedge'; // hedge, follow, dragon, alt, mart
+var singleState = { bet: 0, loseStreak: 0, winStreak: 0, profit: 0, side: null, observing: true, rhythm: null };
+
+var RULE_TEXT = {
+  guide: '<b style="color:#2ecc71">稳健打法</b> · 找「庄庄/庄闲」(押庄)或「闲闲/闲庄」(押闲)的桌 → 固定押一边 · 输了加码 <b>500→1000→2000→500</b> · <b>赢一把立刻停</b>,换桌等下个开头',
+  hedge: '<b style="color:#e94560">对冲</b> · A押庄+B押闲<b>双边同押</b> · 各自:赢→加倍,<b>两连赢回500</b>,震荡(对错对错)不加倍,高层首赢不加倍 · 连输3→加倍,连输6→该边暂停',
+  follow: '<b style="color:#f39c12">跟节奏</b> · 单边押 · 赢→加倍,<b>两连赢回500</b> · 输了不变,<b>连输3次→加倍</b> · 适合1:2(庄闲闲)节奏',
+  dragon: '<b style="color:#4ecdc4">跟龙</b> · 单边押(看近5局多数派) · <b>反马丁</b>:赢→加倍,<b>三连赢回500</b> · <b>输了立刻回500</b> · 适合长龙/连闲',
+  alt: '<b style="color:#9b59b6">买反</b> · 押和上一口相反 · <b>反马丁</b>:赢→加倍,<b>三连赢回500</b> · <b>输了立刻回500</b> · 适合一庄一闲单跳',
+  mart: '<b style="color:#ffd700">倍投</b> · 固定押一边(开打前选) · <b>输→加倍</b>(500→1000→2000…到封顶层为止) · <b>赢→回500</b> · 赢面最大,但连输亏得狠'
+};
+function updateRuleBar(mode) {
+    var bar = document.getElementById('ruleBar');
+    if (bar) bar.innerHTML = RULE_TEXT[mode] || '';
+}
 
 function setMode(mode) {
     currentMode = mode;
+    updateRuleBar(mode);
     document.querySelectorAll('.mode-btn').forEach(function(el){ el.classList.remove('active'); });
-    var ids = { hedge: 'modeHedge', follow: 'modeFollow', dragon: 'modeDragon', alt: 'modeAlt' };
+    var ids = { hedge: 'modeHedge', follow: 'modeFollow', dragon: 'modeDragon', alt: 'modeAlt', mart: 'modeMart', guide: 'modeGuide' };
     document.getElementById(ids[mode]).classList.add('active');
 
     var panel = document.querySelector('.panel');
     var nextInfo = document.querySelector('.next-info');
     var singleEl = document.getElementById('singleBet');
+    var martSetup = document.getElementById('martSetup');
+    var guidePanel = document.getElementById('guidePanel');
+    var settings = document.querySelector('.settings');
+    var resultBtns = document.querySelector('.result-buttons');
+    var summary = document.querySelector('.summary');
+    var historyBox = document.getElementById('historyBox');
+    var bottomBar = document.querySelector('.container > .bottom-bar');
+
+    martSetup.style.display = (mode === 'mart') ? 'block' : 'none';
+
+    if (mode === 'guide') {
+        // 引导模式: 自带一套界面, 隐藏其他所有下注区
+        guidePanel.style.display = 'block';
+        panel.style.display = 'none';
+        nextInfo.style.display = 'none';
+        singleEl.style.display = 'none';
+        settings.style.display = 'none';
+        resultBtns.style.display = 'none';
+        summary.style.display = 'none';
+        historyBox.style.display = 'none';
+        if (bottomBar) bottomBar.style.display = 'none';
+        guideReset();
+        return;
+    }
+
+    // 非引导模式: 恢复常规界面
+    guidePanel.style.display = 'none';
+    settings.style.display = '';
+    resultBtns.style.display = '';
+    summary.style.display = '';
+    historyBox.style.display = '';
+    if (bottomBar) bottomBar.style.display = '';
 
     if (mode === 'hedge') {
         panel.style.display = '';
@@ -292,12 +369,148 @@ function setMode(mode) {
     resetAll();
 }
 
+function setMartSide(side) {
+    singleState.side = side;
+    singleState.observing = false;
+    document.getElementById('martSideB').style.background = side === 'B' ? '#e94560' : '#333';
+    document.getElementById('martSideP').style.background = side === 'P' ? '#4ecdc4' : '#333';
+    updateSingleDisplay();
+}
+
+// ---------- 稳健打法 (引导模式) 独立逻辑, 不碰其他模式 ----------
+// 押一边, 输加码 500-1000-2000-500, 赢即停, 4把未赢则收手
+var GUIDE_STEPS = [500, 1000, 2000, 500];
+var guideState = { side: null, step: 0, session: 0, total: 0, over: false };
+
+function guideSetSide(side) {
+    guideState.side = side;
+    document.getElementById('guideSideB').style.background = side === 'B' ? '#e94560' : '#333';
+    document.getElementById('guideSideP').style.background = side === 'P' ? '#4ecdc4' : '#333';
+    guideNewTable();   // 选好边, 开始这一局
+}
+
+function guideRender() {
+    var g = guideState;
+    var actEl = document.getElementById('guideAction');
+    var betEl = document.getElementById('guideBet');
+    var stepEl = document.getElementById('guideStep');
+    var sName = g.side === 'B' ? '庄' : '闲';
+    if (g.side === null) {
+        actEl.textContent = '先选这桌押庄还是押闲';
+        actEl.style.color = '#ffd700';
+        betEl.textContent = '—';
+        stepEl.textContent = '最多打 4 把';
+    } else if (g.over) {
+        // 本局已结束(赢了或打满4把), 等换桌
+        if (g.session > 0) {
+            actEl.textContent = '✅ 赢了! 收 ' + g.session + ', 该停 → 换桌或等下个开头';
+            actEl.style.color = '#2ecc71';
+        } else {
+            actEl.textContent = '🛑 这桌没追回 (亏 ' + g.session + '), 走人换桌';
+            actEl.style.color = '#ff6b6b';
+        }
+        betEl.textContent = '停手';
+        stepEl.textContent = '点下面「换桌/新一局」开始下一桌';
+    } else {
+        actEl.textContent = '押【' + sName + '】, 中了就停';
+        actEl.style.color = '#ffd700';
+        betEl.textContent = '押' + sName + ' ' + GUIDE_STEPS[g.step];
+        betEl.style.color = g.side === 'B' ? '#e94560' : '#4ecdc4';
+        if (g.step === GUIDE_STEPS.length - 1) {
+            // 最后一把: 提醒可以选择不押 (最坏少亏)
+            stepEl.innerHTML = '第 ' + (g.step + 1) + ' 把(最后一把) · <span style="color:#f39c12">💡也可不押直接收手,最坏少亏500 → 点「换桌/新一局」</span>';
+        } else {
+            stepEl.textContent = '第 ' + (g.step + 1) + ' 把 / 最多 4 把';
+        }
+    }
+    var ses = document.getElementById('guideSession');
+    ses.textContent = (g.session >= 0 ? '+' : '') + g.session;
+    ses.style.color = g.session > 0 ? '#2ecc71' : g.session < 0 ? '#e74c3c' : '#666';
+    var tot = document.getElementById('guideTotal');
+    tot.textContent = (g.total >= 0 ? '+' : '') + g.total;
+    tot.style.color = g.total > 0 ? '#2ecc71' : g.total < 0 ? '#e74c3c' : '#666';
+}
+
+function guidePlay(result) {
+    var g = guideState;
+    if (g.side === null) return;               // 没选边: 先选押庄/押闲
+    if (g.over) return;                         // 本局已结束: 必须手动点「换桌/新一局」, 提醒自己守纪律
+    if (result === 'T') return;                // 和: 这把不算, 注码不变, 继续
+    var bet = GUIDE_STEPS[g.step];
+    var won = (result === g.side);
+    if (won) {
+        g.session += bet;
+        g.total += bet;
+        g.over = true;                         // 赢一把 -> 本局结束, 提示停
+    } else {
+        g.session -= bet;
+        g.total -= bet;
+        g.step++;
+        if (g.step >= GUIDE_STEPS.length) {
+            g.over = true;                     // 打满4把还没赢 -> 收手
+        }
+    }
+    guideRender();
+}
+
+function guideNewTable() {
+    // 开始新一局(新桌或原桌等到新开头): 保留总盈亏和押边, 重置本局
+    guideState.step = 0;
+    guideState.session = 0;
+    guideState.over = false;
+    guideRender();
+}
+
+function guideReset() {
+    // 彻底清零: 连总盈亏和押边都清掉
+    guideState = { side: null, step: 0, session: 0, total: 0, over: false };
+    var b = document.getElementById('guideSideB'), p = document.getElementById('guideSideP');
+    if (b) b.style.background = '#333';
+    if (p) p.style.background = '#333';
+    guideRender();
+}
+
 function updateSingleDisplay() {
     var base = getBase();
     var s = singleState;
     var titleEl = document.getElementById('sbTitle');
     var sideEl = document.getElementById('sbSide');
     var amountEl = document.getElementById('sbAmount');
+
+    if (currentMode === 'mart') {
+        var luckyEl0 = document.getElementById('sbLucky');
+        if (s.side === null) {
+            titleEl.textContent = '先在上面选 押庄 或 押闲';
+            sideEl.textContent = '未选边';
+            sideEl.style.color = '#888';
+            amountEl.textContent = '—';
+            luckyEl0.style.display = 'none';
+            return;
+        }
+        var cap = base * Math.pow(2, getCapLayers() - 1);
+        var layer = Math.round(Math.log2(s.bet / base)) + 1;   // 当前第几层
+        var capped = (s.bet >= cap);
+        // 最大暴露 = 从base翻到顶, 全输的累计 = base*(2^layers - 1)
+        var maxExposure = base * (Math.pow(2, getCapLayers()) - 1);
+        titleEl.textContent = '倍投 第' + layer + '层' + (capped ? ' (已封顶)' : '') +
+            ' · 最大暴露' + maxExposure;
+        sideEl.textContent = '押' + (s.side === 'B' ? '庄' : '闲');
+        sideEl.style.color = s.side === 'B' ? '#e94560' : '#4ecdc4';
+        amountEl.textContent = s.bet;
+        // 危险区警告
+        if (capped) {
+            luckyEl0.textContent = '⛔ 已到顶! 再输无法翻本 — 强烈建议这桌走人';
+            luckyEl0.style.color = '#ff3838';
+            luckyEl0.style.display = 'block';
+        } else if (layer >= getCapLayers() - 1) {
+            luckyEl0.textContent = '⚠ 已第' + layer + '层, 再输一把就到顶, 准备离场';
+            luckyEl0.style.color = '#f39c12';
+            luckyEl0.style.display = 'block';
+        } else {
+            luckyEl0.style.display = 'none';
+        }
+        return;
+    }
 
     if (s.observing) {
         var need = currentMode === 'follow' ? 3 : 2;
@@ -331,6 +544,11 @@ function updateSingleDisplay() {
 
 function calcSingleSide() {
     var h = gameHistory;
+    if (currentMode === 'mart') {
+        // 倍投: 固定押一边, 方向不变, 永不进入观察
+        singleState.observing = (singleState.side === null);
+        return;
+    }
     if (currentMode === 'follow') {
         if (h.length < 3) { singleState.observing = true; return; }
         // 跟节奏: 用前3局确定周期，按位置预测下一局
@@ -359,6 +577,12 @@ function calcSingleSide() {
     }
 }
 
+function getCapLayers() {
+    var el = document.getElementById('capLayers');
+    var v = el ? parseInt(el.value) : 4;
+    return (v && v >= 1) ? v : 4;
+}
+
 function processSingle(winner) {
     var base = getBase();
     var s = singleState;
@@ -369,6 +593,27 @@ function processSingle(winner) {
     }
 
     var betNow = s.bet;
+
+    if (currentMode === 'mart') {
+        // 倍投: 输加倍(封顶), 赢回base. 方向固定不变.
+        var cap = base * Math.pow(2, getCapLayers() - 1);
+        if (s.side === winner) {
+            s.profit += betNow;
+            s.winStreak++;
+            s.loseStreak = 0;
+            s.bet = base;          // 赢了回基础注
+        } else {
+            s.profit -= betNow;
+            s.loseStreak++;
+            s.winStreak = 0;
+            s.bet = Math.min(s.bet * 2, cap);   // 输了加倍, 到顶封住
+        }
+        var elM = document.getElementById('totalProfit');
+        elM.textContent = (s.profit >= 0 ? '+' : '') + s.profit;
+        elM.className = 'profit ' + (s.profit > 0 ? 'positive' : s.profit < 0 ? 'negative' : 'zero');
+        return;
+    }
+
     if (s.side === winner) {
         s.profit += betNow;
         s.winStreak++;
@@ -412,7 +657,7 @@ function newSide(base) {
     return { bet: base, loseStreak: 0, winStreak: 0, profit: 0, rule5shield: false, results: [], totalLosses: 0, paused: false };
 }
 
-let state = { a: newSide(50), b: newSide(50) };
+let state = { a: newSide(getBase()), b: newSide(getBase()) };
 let rounds = 0;
 let snapshots = [];
 let gameHistory = []; // 'B'=banker wins, 'P'=player wins
@@ -597,7 +842,7 @@ function addHistorySingle(winner) {
     var snap = snapshots.length > 0 ? snapshots[snapshots.length - 1].singleState : null;
     var wasObserving = snap ? snap.observing : true;
     var betSide = snap ? snap.side : null;
-    var betAmount = snap ? snap.bet : base;
+    var betAmount = snap ? snap.bet : getBase();
     var prevProfit = snap ? snap.profit : 0;
 
     var text;
@@ -723,6 +968,12 @@ function resetAll() {
     var el = document.getElementById('totalProfit');
     el.textContent = '0'; el.className = 'profit zero';
     document.getElementById('roundCount').textContent = '0';
+    if (currentMode === 'mart') {
+        // 倍投: 重置后回到未选边, 让用户重新选 (换桌从头来)
+        var mb = document.getElementById('martSideB'), mp = document.getElementById('martSideP');
+        if (mb) mb.style.background = '#333';
+        if (mp) mp.style.background = '#333';
+    }
     if (currentMode === 'hedge') { updateAll(); }
     else { updateSingleDisplay(); }
 }
@@ -1005,6 +1256,7 @@ setInterval(renderAlmanac, 30000);
 // ---------- 黄历 end ----------
 
 updateAll();
+setMode('guide');   // 打开就默认进「稳健打法」
 </script>
 </body>
 </html>
