@@ -814,7 +814,7 @@ function abResult(result) {
         var tieDiff=Math.abs(ab.a.bet-ab.b.bet);
         var tieOpposite=ab.side === '庄' ? '闲' : '庄';
         var tieActual=ab.a.bet > ab.b.bet ? ab.side : tieOpposite;
-        abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + '结果出来后请说庄赢了、闲赢了或和局了。');
+        abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + (window.baccaratVoiceNumeric ? '结果出来后请说三三三、四四四或五五五。' : '结果出来后请说庄赢了、闲赢了或和局了。'));
     }
     else if (ab.mode !== previousMode) abSay('切换到' + ab.mode + '模式。注码规则尚未完成。');
 }
@@ -932,6 +932,6 @@ function abListen() {
 
 abRestore();
 </script>
-<script type="module" src="./voice-assets/voice-entry.js?v=kws5"></script>
+<script type="module" src="./voice-assets/voice-entry.js?v=digits1"></script>
 </body>
 </html>
