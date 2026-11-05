@@ -171,7 +171,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <div class="card" id="abNext"></div>
 <p>请告诉我 A 买哪边：</p>
 <div style="display:flex;gap:8px"><button id="abBanker" onclick="abChoose('庄')" style="flex:1;background:#a82e48;font-size:18px;padding:14px">A 买庄</button><button id="abPlayer" onclick="abChoose('闲')" style="flex:1;background:#137c7b;font-size:18px;padding:14px">A 买闲</button></div>
-<button id="abVoice" onclick="abListen()" aria-pressed="false">🎙 开启持续语音</button><p id="abVoiceStatus" role="status">先说“庄”或“闲”选择 A；结果开出后说“庄赢”“闲赢”或“和局”。</p>
+<button id="abVoice" onclick="abListen()" aria-pressed="false">🎙 开启持续语音</button><p id="abVoiceStatus" role="status">方向说“A庄”或“A闲”；结果说“庄赢了”“闲赢了”或“和局了”。</p>
 <p>输入这一局的实际结果：</p>
 <button id="resultBanker" onclick="abResult('庄')">庄赢</button><button id="resultPlayer" onclick="abResult('闲')">闲赢</button><button id="resultTie" onclick="abResult('和')">和局</button><button id="abUndoButton" onclick="abUndo()">撤销上一局</button>
 <div class="card notice">实际盈亏（按庄闲 1:1 估算）：<strong id="abProfit">0</strong><br><span class="notice">未计算庄赢佣金及特殊赔付。</span><div id="abExit" class="notice" role="status" aria-live="polite" style="display:none;margin-top:8px;font-weight:bold"></div></div>
@@ -902,7 +902,7 @@ function abListen() {
     if (!Speech) { abVoiceUI('当前浏览器不支持语音识别，请使用按钮操作。'); return; }
     try {
         abRecognition=new Speech(); abRecognition.lang='zh-CN'; abRecognition.interimResults=false; abRecognition.continuous=false;
-        abRecognition.onstart=function() { abVoiceRunning=true; if (abVoiceEnabled && !abVoicePaused) abVoiceUI('正在监听：选择方向说“庄”或“闲”，结果开出后说“庄赢”“闲赢”或“和局”。'); };
+        abRecognition.onstart=function() { abVoiceRunning=true; if (abVoiceEnabled && !abVoicePaused) abVoiceUI('正在监听：方向说“A庄”或“A闲”；结果说“庄赢了”“闲赢了”或“和局了”。'); };
         abRecognition.onresult=function(e) {
             if (!abVoiceEnabled || abVoicePaused || !ab || ab.ended) return;
             for (var i=e.resultIndex; i<e.results.length; i++) {
@@ -913,10 +913,10 @@ function abListen() {
                 var banker=/庄|莊/.test(t), player=/闲|閒/.test(t);
                 if (/和局|平局|和了|^和$/.test(t) && !banker && !player) { abVoiceUI('听到：'+original+'。录入和局。'); abResult('和'); }
                 else if (banker !== player && /赢|勝|胜|开出|开了/.test(t)) { abVoiceUI('听到：'+original+'。录入'+(banker?'庄赢':'闲赢')+'。'); abResult(banker?'庄':'闲'); }
-                else if (/^(庄|莊|装)$/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买庄。'); abChoose('庄'); }
-                else if (/^(闲|閒)$/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买闲。'); abChoose('闲'); }
+                else if (/^(?:a|Ａ|诶|哎)?(庄|莊|装)$/i.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买庄。'); abChoose('庄'); }
+                else if (/^(?:a|Ａ|诶|哎)?(闲|閒)$/i.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买闲。'); abChoose('闲'); }
                 else if (banker !== player && /买|押|下注/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买'+(banker?'庄':'闲')+'。'); abChoose(banker?'庄':'闲'); }
-                else abVoiceUI('没有理解：'+original+'。请选择说“庄”“闲”“庄赢”“闲赢”或“和局”。');
+                else abVoiceUI('没有理解：'+original+'。请说“A庄”“A闲”“庄赢了”“闲赢了”或“和局了”。');
             }
         };
         abRecognition.onerror=function(e) {
@@ -925,7 +925,7 @@ function abListen() {
             } else if (abVoiceEnabled && e.error !== 'aborted' && e.error !== 'no-speech') abVoiceUI('语音暂时中断，正在尝试恢复。');
         };
         abRecognition.onend=function() { abVoiceRunning=false; if (abVoiceEnabled && !abVoicePaused) { abVoiceUI('监听暂时中断，正在恢复。'); clearTimeout(abVoiceTimer); abVoiceTimer=setTimeout(abVoiceStart,600); } };
-        abVoiceEnabled=true; abVoiceUI('持续语音已开启。先说“庄”或“闲”；结果开出后说“庄赢”“闲赢”或“和局”。'); abVoiceStart();
+        abVoiceEnabled=true; abVoiceUI('持续语音已开启。方向说“A庄”或“A闲”；结果说“庄赢了”“闲赢了”或“和局了”。'); abVoiceStart();
     } catch(e) { abVoiceEnabled=false; abVoiceUI('无法启动语音，请使用按钮操作。'); }
 }
 
