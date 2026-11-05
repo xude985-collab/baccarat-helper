@@ -156,7 +156,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <div class="card" id="abNext"></div>
 <p>请告诉我 A 买哪边：</p>
 <div style="display:flex;gap:8px"><button id="abBanker" onclick="abChoose('庄')" style="flex:1;background:#a82e48;font-size:18px;padding:14px">A 买庄</button><button id="abPlayer" onclick="abChoose('闲')" style="flex:1;background:#137c7b;font-size:18px;padding:14px">A 买闲</button></div>
-<button id="abVoice" onclick="abListen()">🎙 说“A买庄”或“庄赢”</button>
+<button id="abVoice" onclick="abListen()">🎙 说“庄”“闲”或“庄赢”</button>
 <p>输入这一局的实际结果：</p>
 <button onclick="abResult('庄')">庄赢</button><button onclick="abResult('闲')">闲赢</button><button onclick="abResult('和')">和</button><button onclick="abUndo()">撤销上一局</button>
 <div class="card notice">实际盈亏（按庄闲 1:1 估算）：<strong id="abProfit">0</strong><br><span class="notice">未计算庄赢佣金及特殊赔付。</span><div id="abExit" class="notice" role="status" aria-live="polite" style="display:none;margin-top:8px;font-weight:bold"></div></div>
@@ -820,8 +820,10 @@ function abListen() {
             var banker = /庄|莊/.test(t), player = /闲|閒/.test(t);
             if (/和局|平局|和了|^和$/.test(t) && !banker && !player) abResult('和');
             else if (banker !== player && /赢|勝|胜|开出|开了/.test(t)) abResult(banker ? '庄' : '闲');
+            else if (/^(庄|莊|装)$/.test(t)) abChoose('庄');
+            else if (/^(闲|閒)$/.test(t)) abChoose('闲');
             else if (banker !== player && /买|押|下注/.test(t)) abChoose(banker ? '庄' : '闲');
-            else alert('未能确定指令。请说“A买庄”“A买闲”“庄赢”“闲赢”或“和局”。识别结果：' + t);
+            else alert('未能确定指令。请选择说“庄”“闲”“庄赢”“闲赢”或“和局”。识别结果：' + t);
         };
         recognition.onerror=function(){ alert('语音识别失败，请检查浏览器和麦克风权限，或使用按钮选择'); };
         recognition.start();
