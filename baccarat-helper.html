@@ -624,7 +624,7 @@ function abSay(message) {
 function abChoose(side) {
     if (!ab || (ab.ended && !abSimulating)) return;
     if (ab.holdSide && side !== ab.side) { alert('上一局是和局，请维持原方向和注码。'); return; }
-    ab.side=side; abRender();
+    ab.side=side; ab.resultVisible=false; abRender();
     var diff=Math.abs(ab.a.bet-ab.b.bet);
     var opposite=side === '庄' ? '闲' : '庄';
     abSay(diff ? '试算，买' + (ab.a.bet > ab.b.bet ? side : opposite) + diff + '元。注码规则尚未完成。' : '试算，本局不下注。注码规则尚未完成。');
@@ -641,12 +641,13 @@ function abRender() {
     document.getElementById('abEndButton').classList.toggle('ended', ended);
     document.getElementById('abEndButton').textContent=ended ? '✓ 已结束' : '结束';
     ['abBanker','abPlayer','abVoice','resultBanker','resultPlayer','resultTie','abUndoButton'].forEach(function(id) { document.getElementById(id).disabled=ended; });
-    document.getElementById('abBanker').classList.toggle('chosen', ab.side === '庄');
-    document.getElementById('abPlayer').classList.toggle('chosen', ab.side === '闲');
-    document.getElementById('abBanker').setAttribute('aria-pressed', String(ab.side === '庄'));
-    document.getElementById('abPlayer').setAttribute('aria-pressed', String(ab.side === '闲'));
+    var directionVisible=!!ab.side && !ab.resultVisible;
+    document.getElementById('abBanker').classList.toggle('chosen', directionVisible && ab.side === '庄');
+    document.getElementById('abPlayer').classList.toggle('chosen', directionVisible && ab.side === '闲');
+    document.getElementById('abBanker').setAttribute('aria-pressed', String(directionVisible && ab.side === '庄'));
+    document.getElementById('abPlayer').setAttribute('aria-pressed', String(directionVisible && ab.side === '闲'));
     var lastResult = ab.history.length && ab.history[ab.history.length-1].stats && ab.history[ab.history.length-1].stats.result;
-    [['resultBanker','庄'],['resultPlayer','闲'],['resultTie','和']].forEach(function(pair) { var button=document.getElementById(pair[0]); button.classList.toggle('result-selected', lastResult === pair[1]); button.setAttribute('aria-pressed', String(lastResult === pair[1])); });
+    [['resultBanker','庄'],['resultPlayer','闲'],['resultTie','和']].forEach(function(pair) { var button=document.getElementById(pair[0]), selected=!!ab.resultVisible && lastResult === pair[1]; button.classList.toggle('result-selected', selected); button.setAttribute('aria-pressed', String(selected)); });
     var opposite = ab.side === '庄' ? '闲' : '庄';
     var diff = Math.abs(ab.a.bet-ab.b.bet);
     var actual = ended ? '本局已结束' : !ab.side ? '请先选择 A 的方向' : !diff ? '本局不下注' : '实际买' + (ab.a.bet > ab.b.bet ? ab.side : opposite) + ' ' + diff;
@@ -689,6 +690,7 @@ function abRestore() {
         var saved=JSON.parse(localStorage.getItem('baccaratABSessionV1') || 'null');
         if (!saved || !saved.a || !saved.b || !Array.isArray(saved.history) || !Number.isSafeInteger(saved.base) || saved.base <= 0 || !['A','B'].includes(saved.position)) return;
         ab=saved;
+        if (typeof ab.resultVisible !== 'boolean') ab.resultVisible=!!ab.history.length && (!ab.side || !!ab.holdSide);
         var choice=document.getElementById('abBase');
         var options=['50','100','200','300','500','1000'];
         choice.value=options.includes(String(ab.base)) ? String(ab.base) : 'custom';
@@ -751,7 +753,7 @@ function abResult(result) {
     if (!ab || !ab.side) { alert('请先选择 A 的方向'); return; }
     var previousMode = ab.mode;
     var previousSegment = ab.segment;
-    var snap = JSON.stringify({a:ab.a,b:ab.b,profit:ab.profit,side:ab.side,mode:ab.mode,anchor:ab.anchor,runSide:ab.runSide,runCount:ab.runCount,segment:ab.segment,holdSide:!!ab.holdSide,highExitSeen:!!ab.highExitSeen,exitReasons:(ab.exitReasons || []).slice()});
+    var snap = JSON.stringify({a:ab.a,b:ab.b,profit:ab.profit,side:ab.side,mode:ab.mode,anchor:ab.anchor,runSide:ab.runSide,runCount:ab.runCount,segment:ab.segment,holdSide:!!ab.holdSide,resultVisible:!!ab.resultVisible,highExitSeen:!!ab.highExitSeen,exitReasons:(ab.exitReasons || []).slice()});
     var aBet=ab.a.bet, bBet=ab.b.bet, side=ab.side, other=side === '庄' ? '闲' : '庄';
     var diff=Math.abs(aBet-bBet), actual= aBet>bBet ? side : other;
     var delta=0;
@@ -804,6 +806,7 @@ function abResult(result) {
     var row='<tr><td>'+(ab.history.length+1)+'</td><td>'+cell(side,aBet,aMark)+'</td><td>'+cell(other,bBet,bMark)+'</td><td>'+(diff ? actual+' '+diff : '不下注')+'</td><td>'+result+'</td><td>'+(delta>=0?'+':'')+delta+'</td><td>'+(ab.profit>=0?'+':'')+ab.profit+'</td></tr>';
     ab.history.push({snapshot:snap,row:row,stats:{segment:previousSegment,mode:previousMode,delta:delta,actual:diff,a:aBet,b:bBet,result:result,retry:previousMode === '移花' && ab.mode === '移花' && ab.segment !== previousSegment}});
     ab.holdSide = result === '和';
+    ab.resultVisible = true;
     if (result !== '和') ab.side=null;
     abRender();
     if (typeof newExit !== 'undefined' && newExit.length) {
@@ -821,7 +824,7 @@ function abResult(result) {
 function abUndo() {
     if (!ab || (ab.ended && !abSimulating) || !ab.history.length) return;
     var row=ab.history.pop(), old=JSON.parse(row.snapshot);
-    ab.a=old.a; ab.b=old.b; ab.profit=old.profit; ab.side=old.side; ab.mode=old.mode; ab.anchor=old.anchor; ab.runSide=old.runSide; ab.runCount=old.runCount; ab.segment=old.segment; ab.holdSide=!!old.holdSide; ab.highExitSeen=!!old.highExitSeen; ab.exitReasons=old.exitReasons || []; abRender();
+    ab.a=old.a; ab.b=old.b; ab.profit=old.profit; ab.side=old.side; ab.mode=old.mode; ab.anchor=old.anchor; ab.runSide=old.runSide; ab.runCount=old.runCount; ab.segment=old.segment; ab.holdSide=!!old.holdSide; ab.resultVisible=!!old.resultVisible; ab.highExitSeen=!!old.highExitSeen; ab.exitReasons=old.exitReasons || []; abRender();
 }
 function abRenderStats() {
     var groups={}, order=[], retries=0, missing=false;
