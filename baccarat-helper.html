@@ -161,6 +161,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <p class="notice">目前只计算基本连对、连错规则。模式切换及进入移花的注码转移已初步实现；策略正在按示例验证，下注金额暂供试算，因此这里的注码只是初步结果，请勿作为实际下注依据。</p>
 <label>基础注码 <select id="abBase" onchange="document.getElementById('abCustomBase').style.display=this.value === 'custom' ? 'inline-block' : 'none'"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="500">500</option><option value="1000">1000</option><option value="custom">自定义</option></select> <input id="abCustomBase" type="number" min="1" step="1" placeholder="输入金额" style="display:none;width:110px"></label>
 <label>观察头寸（不下注），最后连续两个对在 <select id="abPosition" required><option value="">请选择</option><option value="A">A 两个对</option><option value="B">B 两个对</option></select></label>
+<p id="abSettingsHint" class="notice" role="status">开始前选择基础注码和观察头寸。</p>
 <button id="abStartButton" onclick="abStart()">开始</button>
 <button id="abEndButton" onclick="abEnd()" disabled>结束</button>
 <p id="abStartStatus" class="notice" role="status" aria-live="polite" style="display:none;font-weight:bold"></p>
@@ -562,6 +563,7 @@ setInterval(renderAlmanac, 30000);
 // AB 对冲的基础试算；特殊规则待确认后实现。
 var ab = null;
 var abSimulating = false;
+var abSaveFailed = false;
 function showPage(page) {
     [['play','pagePlay','navPlay'],['sim','pageSim','navSim'],['almanac','pageAlmanac','navAlmanac']].forEach(function(item) {
         var active=page === item[0];
@@ -629,6 +631,8 @@ function abChoose(side) {
 function abRender() {
     if (!ab || abSimulating) return;
     var ended=!!ab.ended;
+    ['abBase','abCustomBase','abPosition'].forEach(function(id) { document.getElementById(id).disabled=!ended; });
+    document.getElementById('abSettingsHint').textContent=ended ? '可以选择下一牌局的基础注码和观察头寸。' : '本局基础注码和观察头寸已锁定，结束后可修改。';
     document.getElementById('abStartButton').classList.toggle('started', !ended);
     document.getElementById('abStartButton').textContent=ended ? '开始' : '✓ 已开始';
     document.getElementById('abStartButton').disabled=!ended;
@@ -644,7 +648,7 @@ function abRender() {
     [['resultBanker','庄'],['resultPlayer','闲'],['resultTie','和']].forEach(function(pair) { var button=document.getElementById(pair[0]); button.classList.toggle('result-selected', lastResult === pair[1]); button.setAttribute('aria-pressed', String(lastResult === pair[1])); });
     var opposite = ab.side === '庄' ? '闲' : '庄';
     var diff = Math.abs(ab.a.bet-ab.b.bet);
-    var actual = !ab.side ? '请先选择 A 的方向' : !diff ? '本局不下注' : '实际买' + (ab.a.bet > ab.b.bet ? ab.side : opposite) + ' ' + diff;
+    var actual = ended ? '本局已结束' : !ab.side ? '请先选择 A 的方向' : !diff ? '本局不下注' : '实际买' + (ab.a.bet > ab.b.bet ? ab.side : opposite) + ' ' + diff;
     document.getElementById('abNext').innerHTML = '观察头寸：' + ab.position + ' 连续两个对（不下注）<br>当前模式：' + ab.mode + '（比较起点：' + ab.anchor + '）<br>目标：' + (ab.mode === '母本' ? (ab.anchor === 'A' ? 'B' : 'A') : ab.anchor) + ' 连续两个对<br>A：' + (ab.side || '待选择') + ' ' + ab.a.bet + '　B：' + (ab.side ? opposite : '待选择') + ' ' + ab.b.bet + '<br><span class="actual">' + actual + '</span>';
     if ((ab.a.tail && ab.a.bet > ab.base * 4) || (ab.b.tail && ab.b.bet > ab.base * 4)) document.getElementById('abNext').innerHTML += '<br><span class="notice">尾数超过基础注码四倍，请核对前面的记录。</span>';
     var exitBox=document.getElementById('abExit');
@@ -674,8 +678,10 @@ function abRender() {
 }
 function abPersist() {
     if (!ab) return;
-    try { localStorage.setItem('baccaratABSessionV1', JSON.stringify(ab)); }
-    catch(e) { document.getElementById('abStorage').textContent='本局无法自动保存，刷新后可能丢失记录。'; document.getElementById('abStorage').style.display='block'; }
+    try {
+        localStorage.setItem('baccaratABSessionV1', JSON.stringify(ab));
+        if (abSaveFailed) { document.getElementById('abStorage').textContent='自动保存已恢复。'; document.getElementById('abStorage').style.display='block'; abSaveFailed=false; }
+    } catch(e) { abSaveFailed=true; document.getElementById('abStorage').textContent='本局无法自动保存，刷新后可能丢失记录。'; document.getElementById('abStorage').style.display='block'; }
 }
 function abRestore() {
     try {
@@ -898,6 +904,7 @@ function abListen() {
         abRecognition=new Speech(); abRecognition.lang='zh-CN'; abRecognition.interimResults=false; abRecognition.continuous=false;
         abRecognition.onstart=function() { abVoiceRunning=true; if (abVoiceEnabled && !abVoicePaused) abVoiceUI('正在监听：选择方向说“庄”或“闲”，结果开出后说“庄赢”“闲赢”或“和局”。'); };
         abRecognition.onresult=function(e) {
+            if (!abVoiceEnabled || abVoicePaused || !ab || ab.ended) return;
             for (var i=e.resultIndex; i<e.results.length; i++) {
                 if (!e.results[i].isFinal) continue;
                 var t=e.results[i][0].transcript.replace(/[，。,.！!？?\s]/g, '');
