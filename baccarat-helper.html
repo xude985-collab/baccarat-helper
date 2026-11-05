@@ -813,7 +813,7 @@ function abResult(result) {
         var tieDiff=Math.abs(ab.a.bet-ab.b.bet);
         var tieOpposite=ab.side === '庄' ? '闲' : '庄';
         var tieActual=ab.a.bet > ab.b.bet ? ab.side : tieOpposite;
-        abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + '结果出来后请说庄赢、闲赢或和局。');
+        abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + '结果出来后请说庄赢了、闲赢了或和局了。');
     }
     else if (ab.mode !== previousMode) abSay('切换到' + ab.mode + '模式。注码规则尚未完成。');
 }
@@ -835,7 +835,7 @@ function abRenderStats() {
     var text='<strong>母本 / 移花分段</strong><br>累计移花失败：'+retries+' 次<br>';
     if (missing) text+='较早记录缺少分段数据，以下只统计更新后的局数。<br>';
     order.forEach(function(key) { var g=groups[key]; text+=g.mode+'（第 '+g.start+' 局起，'+g.rounds+' 局）：盈亏 '+(g.profit>=0?'+':'')+g.profit+'，段内最大回撤 '+g.drawdown+'，最高实际下注 '+g.maxActual+'，A/B 最高 '+g.maxA+'/'+g.maxB+(g.retries?'，移花失败 '+g.retries+' 次':'')+'<br>'; });
-    function root(s) { return typeof s.lossRoot === 'number' ? s.lossRoot : (s.theory || 0); }
+    function root(s) { return typeof s.theory === 'number' ? s.theory : 0; }
     text+='当前注码线累计理论盈亏：A '+root(ab.a)+'，B '+root(ab.b)+'；高仓三错时按三错前的根判断。<br>当前目标：'+(ab.mode==='母本'?(ab.anchor==='A'?'B':'A'):ab.anchor)+' 连续两个对，已出现 '+(ab.runSide === (ab.mode==='母本'?(ab.anchor==='A'?'B':'A'):ab.anchor) ? ab.runCount : 0)+' 个。';
     document.getElementById('abStats').innerHTML=text;
 }
