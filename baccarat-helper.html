@@ -595,6 +595,7 @@ function abEnd() {
     if (!ab || ab.ended) return;
     if (!confirm('确定结束当前牌局吗？记录会保留，开始新牌局时才会清空。')) return;
     if (abVoiceEnabled) abListen();
+    if (typeof window.dispatchEvent === 'function' && typeof Event === 'function') window.dispatchEvent(new Event('baccarat-game-ended'));
     ab.ended=true;
     abRender();
     var status=document.getElementById('abStartStatus');
@@ -931,6 +932,6 @@ function abListen() {
 
 abRestore();
 </script>
-<script type="module" src="./voice-assets/voice-entry.js?v=kws4"></script>
+<script type="module" src="./voice-assets/voice-entry.js?v=kws5"></script>
 </body>
 </html>
