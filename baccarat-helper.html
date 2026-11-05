@@ -133,7 +133,8 @@ h1 { color: #e8ca83; letter-spacing: .08em; margin: 8px 0 14px; }
 #strategy #abBanker { background: #a74653 !important; border-color: #d27a83; }
 #strategy #abPlayer { background: #286c9d !important; border-color: #6fa6ca; }
 /* 对已选择的表单选项和开关使用统一高亮。 */
-.strategy select:not(#abPosition), #abPosition:valid { background: #ffdf70; color: #172333; border: 2px solid #fff2bb; font-weight: bold; }
+.strategy select:not(#abPosition), #abPosition:valid, #strategy #abPosition.has-selection { background: #ffdf70; color: #172333; border: 2px solid #fff2bb; font-weight: bold; }
+#strategy #abPosition.has-selection:disabled { opacity: 1; -webkit-text-fill-color: #172333; }
 .strategy select option { background: #223247; color: #f1f5fa; }
 .strategy input[type="checkbox"] { accent-color: #ffdf70; width: 18px; height: 18px; vertical-align: middle; }
 #strategy #abVoice[aria-pressed="true"] { background: #ffdf70; color: #172333; border: 2px solid #fff2bb; font-weight: bold; }
@@ -161,7 +162,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <label><input id="abSpeak" type="checkbox"> 开启语音播报（浏览器支持时）</label>
 <p class="notice">目前只计算基本连对、连错规则。模式切换及进入移花的注码转移已初步实现；策略正在按示例验证，下注金额暂供试算，因此这里的注码只是初步结果，请勿作为实际下注依据。</p>
 <label>基础注码 <select id="abBase" onchange="document.getElementById('abCustomBase').style.display=this.value === 'custom' ? 'inline-block' : 'none'"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="500">500</option><option value="1000">1000</option><option value="custom">自定义</option></select> <input id="abCustomBase" type="number" min="1" step="1" placeholder="输入金额" style="display:none;width:110px"></label>
-<label>观察头寸（不下注），最后连续两个对在 <select id="abPosition" required><option value="">请选择</option><option value="A">A 两个对</option><option value="B">B 两个对</option></select></label>
+<label>观察头寸（不下注），最后连续两个对在 <select id="abPosition" required onchange="this.classList.toggle('has-selection', !!this.value)"><option value="">请选择</option><option value="A">A 两个对</option><option value="B">B 两个对</option></select></label>
 <p id="abSettingsHint" class="notice" role="status">开始前选择基础注码和观察头寸。</p>
 <button id="abStartButton" onclick="abStart()">开始</button>
 <button id="abEndButton" onclick="abEnd()" disabled>结束</button>
@@ -635,6 +636,7 @@ function abChoose(side) {
 function abRender() {
     if (!ab || abSimulating) return;
     var ended=!!ab.ended;
+    document.getElementById('abPosition').classList.toggle('has-selection', !!document.getElementById('abPosition').value);
     ['abBase','abCustomBase','abPosition'].forEach(function(id) { document.getElementById(id).disabled=!ended; });
     document.getElementById('abSettingsHint').textContent=ended ? '可以选择下一牌局的基础注码和观察头寸。' : '本局基础注码和观察头寸已锁定，结束后可修改。';
     document.getElementById('abStartButton').classList.toggle('started', !ended);
