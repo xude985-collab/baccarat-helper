@@ -575,7 +575,7 @@ function abSay(message) {
     var speechId=++abSpeechId;
     clearTimeout(abSpeechTimer);
     window.speechSynthesis.cancel();
-    if (abVoiceEnabled && abRecognition) { abVoicePaused=true; clearTimeout(abVoiceTimer); abVoiceUI('正在播报，播报结束后恢复监听。'); try { abRecognition.stop(); } catch(e) {} }
+    if (abVoiceEnabled && abRecognition) { abVoicePaused=true; abVoiceRunning=false; clearTimeout(abVoiceTimer); abVoiceUI('正在播报，播报结束后恢复监听。'); try { abRecognition.stop(); } catch(e) {} }
     function resumeListening() {
         if (speechId !== abSpeechId) return;
         clearTimeout(abSpeechTimer); abVoicePaused=false;
@@ -827,7 +827,7 @@ function abRunSimulation() {
         finally { ab=original; abSimulating=false; button.disabled=false; }
     }, 0);
 }
-var abRecognition = null, abVoiceEnabled = false, abVoicePaused = false, abVoiceTimer = null, abSpeechTimer = null, abSpeechId = 0;
+var abRecognition = null, abVoiceEnabled = false, abVoicePaused = false, abVoiceTimer = null, abSpeechTimer = null, abSpeechId = 0, abVoiceRunning = false;
 function abVoiceUI(message) {
     var button=document.getElementById('abVoice');
     button.textContent=abVoiceEnabled ? '🎙 关闭持续语音' : '🎙 开启持续语音';
@@ -835,20 +835,27 @@ function abVoiceUI(message) {
     document.getElementById('abVoiceStatus').textContent=message;
 }
 function abVoiceStart() {
-    if (!abVoiceEnabled || abVoicePaused || !abRecognition) return;
-    try { abRecognition.start(); } catch(e) { /* 已在监听时无需重复启动 */ }
+    if (!abVoiceEnabled || abVoicePaused || !abRecognition || abVoiceRunning) return;
+    try {
+        abRecognition.start();
+    } catch(e) {
+        // 手机可能尚未完成上一次 stop；稍后重试，等待 onstart 确认。
+        clearTimeout(abVoiceTimer);
+        abVoiceUI('正在恢复监听，请稍候。');
+        abVoiceTimer=setTimeout(abVoiceStart,1200);
+    }
 }
 function abListen() {
     if (abVoiceEnabled) {
-        abVoiceEnabled=false; abVoicePaused=false; clearTimeout(abVoiceTimer); clearTimeout(abSpeechTimer); ++abSpeechId;
+        abVoiceEnabled=false; abVoicePaused=false; abVoiceRunning=false; clearTimeout(abVoiceTimer); clearTimeout(abSpeechTimer); ++abSpeechId;
         if (abRecognition) { try { abRecognition.stop(); } catch(e) {} }
         abVoiceUI('语音已关闭。先选择 A 的方向，结果开出后再输入结果。'); return;
     }
     var Speech=window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Speech) { abVoiceUI('当前浏览器不支持语音识别，请使用按钮操作。'); return; }
     try {
-        abRecognition=new Speech(); abRecognition.lang='zh-CN'; abRecognition.interimResults=false; abRecognition.continuous=true;
-        abRecognition.onstart=function() { if (abVoiceEnabled && !abVoicePaused) abVoiceUI('正在监听：选择方向说“庄”或“闲”，结果开出后说“庄赢”“闲赢”或“和局”。'); };
+        abRecognition=new Speech(); abRecognition.lang='zh-CN'; abRecognition.interimResults=false; abRecognition.continuous=false;
+        abRecognition.onstart=function() { abVoiceRunning=true; if (abVoiceEnabled && !abVoicePaused) abVoiceUI('正在监听：选择方向说“庄”或“闲”，结果开出后说“庄赢”“闲赢”或“和局”。'); };
         abRecognition.onresult=function(e) {
             for (var i=e.resultIndex; i<e.results.length; i++) {
                 if (!e.results[i].isFinal) continue;
@@ -869,7 +876,7 @@ function abListen() {
                 abVoiceEnabled=false; abVoiceUI('语音无法使用，请检查麦克风权限或改用按钮。');
             } else if (abVoiceEnabled && e.error !== 'aborted' && e.error !== 'no-speech') abVoiceUI('语音暂时中断，正在尝试恢复。');
         };
-        abRecognition.onend=function() { if (abVoiceEnabled && !abVoicePaused) { abVoiceUI('监听暂时中断，正在恢复。'); clearTimeout(abVoiceTimer); abVoiceTimer=setTimeout(abVoiceStart,600); } };
+        abRecognition.onend=function() { abVoiceRunning=false; if (abVoiceEnabled && !abVoicePaused) { abVoiceUI('监听暂时中断，正在恢复。'); clearTimeout(abVoiceTimer); abVoiceTimer=setTimeout(abVoiceStart,600); } };
         abVoiceEnabled=true; abVoiceUI('持续语音已开启。先说“庄”或“闲”；结果开出后说“庄赢”“闲赢”或“和局”。'); abVoiceStart();
     } catch(e) { abVoiceEnabled=false; abVoiceUI('无法启动语音，请使用按钮操作。'); }
 }
