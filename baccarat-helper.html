@@ -762,7 +762,12 @@ function abResult(result) {
         abSay('出局提醒，' + newExit.join('，') + '，请换下一牌局。');
         if (!abSimulating) alert('出局提醒：' + newExit.join('；') + '。请换下一牌局。');
     }
-    else if (result === '和') abSay('和局，下一局维持原方向和注码。');
+    else if (result === '和') {
+        var tieDiff=Math.abs(ab.a.bet-ab.b.bet);
+        var tieOpposite=ab.side === '庄' ? '闲' : '庄';
+        var tieActual=ab.a.bet > ab.b.bet ? ab.side : tieOpposite;
+        abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + '结果出来后请说庄赢、闲赢或和局。');
+    }
     else if (ab.mode !== previousMode) abSay('切换到' + ab.mode + '模式。注码规则尚未完成。');
 }
 function abUndo() {
