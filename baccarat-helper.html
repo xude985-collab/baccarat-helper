@@ -815,6 +815,8 @@ function abListen() {
         var recognition=new Speech(); recognition.lang='zh-CN'; recognition.interimResults=false;
         recognition.onresult=function(e) {
             var t=e.results[0][0].transcript.replace(/[，。,.！!？?\s]/g, '');
+            // 手机可能将“买庄”识别成“买装”；仅在选择方向时纠正。
+            if (/买装/.test(t) && !/赢|勝|胜|开出|开了/.test(t)) t=t.replace(/买装/g, '买庄');
             var banker = /庄|莊/.test(t), player = /闲|閒/.test(t);
             if (/和局|平局|和了|^和$/.test(t) && !banker && !player) abResult('和');
             else if (banker !== player && /赢|勝|胜|开出|开了/.test(t)) abResult(banker ? '庄' : '闲');
