@@ -729,10 +729,9 @@ function abAdvance(s, won) {
             if (i<n-1 && prior[i] === prior[i+1]) break;
             alternating++;
         }
-        // 两种已给出的交错轨迹：对错对后再对，及错对错对错后对。
+        // 交错保护针对对错交替后的一次对；连续两对照常回基础。
         var alternateHold = bet >= ab.base * 4 &&
-            ((alternating >= 3 && alternating % 2 === 1 && prior[n-1] === 'W') ||
-             (alternating >= 4 && prior[n-1] === 'L'));
+            alternating >= 4 && prior[n-1] === 'L';
         var highHold = !!s.highHold && s.highRoot >= 0;
         var tailHold = !!s.tail && bet >= ab.base * 4;
         s.wins++; s.losses=0;
