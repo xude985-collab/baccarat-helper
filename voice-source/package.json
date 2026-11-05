@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"build":"vite build"},"dependencies":{"@sherpaw/kws":"0.3.0","@sherpaw/preloader":"0.3.0"},"devDependencies":{"vite":"8.3.6"}}
