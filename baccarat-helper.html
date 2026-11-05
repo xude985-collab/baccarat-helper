@@ -605,20 +605,22 @@ function abEnd() {
 }
 function abSay(message) {
     if (abSimulating || !document.getElementById('abSpeak').checked || !('speechSynthesis' in window)) return;
-    var speechId=++abSpeechId;
+    var speechId=++abSpeechId, speechSettled=false;
+    abSpeechActive=true;
     clearTimeout(abSpeechTimer);
     window.speechSynthesis.cancel();
     if (abVoiceEnabled && abRecognition) { abVoicePaused=true; abVoiceRunning=false; clearTimeout(abVoiceTimer); abVoiceUI('正在播报，播报结束后恢复监听。'); try { abRecognition.stop(); } catch(e) {} }
     function resumeListening() {
-        if (speechId !== abSpeechId) return;
-        clearTimeout(abSpeechTimer); abVoicePaused=false;
+        if (speechId !== abSpeechId || speechSettled) return;
+        speechSettled=true;
+        clearTimeout(abSpeechTimer); abSpeechActive=false; abVoicePaused=false;
         if (abVoiceEnabled) { abVoiceUI('正在恢复监听，请稍候。'); abVoiceTimer=setTimeout(abVoiceStart,700); }
     }
     var utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = 'zh-CN';
     utterance.onend = utterance.onerror = resumeListening;
     // 部分手机不触发播报结束事件；超时后主动恢复监听。
-    abSpeechTimer=setTimeout(resumeListening, Math.min(20000, Math.max(8000, message.length*400)));
+    abSpeechTimer=setTimeout(function() { if (speechId !== abSpeechId) return; try { window.speechSynthesis.cancel(); } catch(e) {} resumeListening(); }, Math.min(20000, Math.max(8000, message.length*400)));
     try { window.speechSynthesis.speak(utterance); } catch(e) { resumeListening(); }
 }
 function abChoose(side) {
@@ -810,7 +812,7 @@ function abResult(result) {
     if (result !== '和') ab.side=null;
     abRender();
     if (typeof newExit !== 'undefined' && newExit.length) {
-        abSay('出局提醒，' + newExit.join('，') + '，请换下一牌局。');
+        abSay((result === '和' ? '和局。' : result + '赢了。') + '出局提醒，' + newExit.join('，') + '，请换下一牌局。');
         if (!abSimulating) alert('出局提醒：' + newExit.join('；') + '。请换下一牌局。');
     }
     else if (result === '和') {
@@ -819,7 +821,11 @@ function abResult(result) {
         var tieActual=ab.a.bet > ab.b.bet ? ab.side : tieOpposite;
         abSay('和局，A继续买' + ab.side + '。' + (tieDiff ? '下一局实际买' + tieActual + tieDiff + '元。' : '下一局不下注。') + (window.baccaratVoiceNumeric && typeof window.baccaratVoiceResultPrompt === 'function' ? window.baccaratVoiceResultPrompt() : '结果出来后请说庄赢了、闲赢了或和局了。'));
     }
-    else if (ab.mode !== previousMode) abSay('切换到' + ab.mode + '模式。注码规则尚未完成。');
+    else {
+        var resultSpeech=result + '赢了。';
+        if (ab.mode !== previousMode) resultSpeech+='切换到' + ab.mode + '模式。注码规则尚未完成。';
+        abSay(resultSpeech);
+    }
 }
 function abUndo() {
     if (!ab || (ab.ended && !abSimulating) || !ab.history.length) return;
@@ -878,7 +884,7 @@ function abRunSimulation() {
         finally { ab=original; abSimulating=false; button.disabled=false; }
     }, 0);
 }
-var abRecognition = null, abVoiceEnabled = false, abVoicePaused = false, abVoiceTimer = null, abSpeechTimer = null, abSpeechId = 0, abVoiceRunning = false;
+var abRecognition = null, abVoiceEnabled = false, abVoicePaused = false, abVoiceTimer = null, abSpeechTimer = null, abSpeechId = 0, abVoiceRunning = false, abSpeechActive = false;
 function abVoiceUI(message) {
     var button=document.getElementById('abVoice');
     button.textContent=abVoiceEnabled ? '🎙 关闭持续语音' : '🎙 开启持续语音';
@@ -898,7 +904,7 @@ function abVoiceStart() {
 }
 function abListen() {
     if (abVoiceEnabled) {
-        abVoiceEnabled=false; abVoicePaused=false; abVoiceRunning=false; clearTimeout(abVoiceTimer); clearTimeout(abSpeechTimer); ++abSpeechId;
+        abVoiceEnabled=false; abVoicePaused=false; abVoiceRunning=false; clearTimeout(abVoiceTimer); clearTimeout(abSpeechTimer); ++abSpeechId; abSpeechActive=false;
         if (abRecognition) { try { abRecognition.stop(); } catch(e) {} }
         abVoiceUI('语音已关闭。先选择 A 的方向，结果开出后再输入结果。'); return;
     }
@@ -935,6 +941,6 @@ function abListen() {
 
 abRestore();
 </script>
-<script type="module" src="./voice-assets/voice-entry.js?v=digits5"></script>
+<script type="module" src="./voice-assets/voice-entry.js?v=digits6"></script>
 </body>
 </html>
