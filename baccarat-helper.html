@@ -79,6 +79,7 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .strategy .mode-label:after { content:""; height:2px; background:#e94560; flex:1; }
 .strategy .win-mark { color:#56d99a; font-weight:bold; }
 .strategy .lose-mark { color:#ff8585; font-weight:bold; }
+.strategy tr.round-pending td { background:rgba(232,202,131,.13); color:#f1d28a; font-weight:bold; }
 #strategy #abProfit.profit-positive { color:#ffd080; }
 #strategy #abProfit.profit-negative { color:#ff5555; }
 .page-nav { display:flex; gap:6px; padding:5px; margin:0 0 12px; background:#16213e; border-radius:10px; }
@@ -176,7 +177,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <button id="resultBanker" onclick="abResult('庄')">庄赢</button><button id="resultPlayer" onclick="abResult('闲')">闲赢</button><button id="resultTie" onclick="abResult('和')">和局</button><button id="abUndoButton" onclick="abUndo()">撤销上一局</button>
 <div class="card notice">实际盈亏（按庄闲 1:1 估算）：<strong id="abProfit">0</strong><br><span class="notice">未计算庄赢佣金及特殊赔付。</span><div id="abExit" class="notice" role="status" aria-live="polite" style="display:none;margin-top:8px;font-weight:bold"></div></div>
 <details class="card"><summary>分段记录和风险统计</summary><div id="abStats"></div></details>
-<p>逐局记录（A、B 注码按图片分列；最新一局在最下方）</p><div class="rows"><table><thead><tr><th>局</th><th>A</th><th>B</th><th>实际下注</th><th>结果</th><th>本局盈亏</th><th>累计</th></tr></thead><tbody id="abHistory"></tbody></table></div>
+<p>逐局记录（选好方向即显示待结果的下注；最新一局在最下方）</p><div class="rows"><table><thead><tr><th>局</th><th>A</th><th>B</th><th>实际下注</th><th>结果</th><th>本局盈亏</th><th>累计</th></tr></thead><tbody id="abHistory"></tbody></table></div>
 </div>
 </section>
 </div>
@@ -676,6 +677,11 @@ function abRender() {
         rows += x.row;
     });
     if (ab.segment !== lastSegment) rows += divider(ab.mode);
+    // 待结果行只用于展示，完成前不计入历史和盈亏。
+    if (ab.side && !ended) {
+        var pendingBet=diff ? (ab.a.bet > ab.b.bet ? ab.side : opposite) + ' ' + diff : '不下注';
+        rows += '<tr class="round-pending"><td>'+(ab.history.length+1)+'</td><td>'+ab.side+' '+ab.a.bet+'</td><td>'+opposite+' '+ab.b.bet+'</td><td>'+pendingBet+'</td><td>等待结果</td><td>—</td><td>—</td></tr>';
+    }
     document.getElementById('abHistory').innerHTML = rows;
     abRenderStats();
     abPersist();
