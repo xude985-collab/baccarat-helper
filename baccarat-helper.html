@@ -86,8 +86,9 @@ h1 { text-align: center; color: #ffd700; margin-bottom: 10px; font-size: 18px; }
 .page-nav button.active { color:#1a1a2e; background:#ffd700; font-weight:bold; }
 .strategy details.card summary { cursor:pointer; color:#ffd700; font-weight:bold; }
 .strategy details.card #abStats { margin-top:8px; }
-.strategy .rows { max-height:340px; overflow:auto; }
-.strategy .rows th { position:sticky; top:0; background:#16213e; }
+/* 记录随页面自然向下延伸，手机上下滑动不会被表格截住。 */
+.strategy .rows { overflow-x:auto; max-height:none; }
+.strategy .rows th { background:#16213e; }
 #simOutput { line-height:1.8; margin-top:10px; color:#eee; overflow-wrap:anywhere; }
 
 
