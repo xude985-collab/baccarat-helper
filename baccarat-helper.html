@@ -132,6 +132,7 @@ h1 { color: #e8ca83; letter-spacing: .08em; margin: 8px 0 14px; }
 #strategy #abBanker { background: #a74653 !important; border-color: #d27a83; }
 #strategy #abPlayer { background: #286c9d !important; border-color: #6fa6ca; }
 #strategy #abBanker.chosen, #strategy #abPlayer.chosen { background: #ffdf70 !important; color: #172333; border: 3px solid #fff2bb; box-shadow: 0 0 0 2px #202936, 0 0 0 4px #ffdf70; }
+#strategy .result-selected { background: #ffdf70 !important; color: #172333; border: 3px solid #fff2bb; font-weight: bold; }
 #strategy #abBanker.chosen::after, #strategy #abPlayer.chosen::after { content: " ✓ 已选"; font-size: 13px; font-weight: bold; }
 button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid #f1d28a; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
@@ -156,9 +157,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <div class="card" id="abNext"></div>
 <p>请告诉我 A 买哪边：</p>
 <div style="display:flex;gap:8px"><button id="abBanker" onclick="abChoose('庄')" style="flex:1;background:#a82e48;font-size:18px;padding:14px">A 买庄</button><button id="abPlayer" onclick="abChoose('闲')" style="flex:1;background:#137c7b;font-size:18px;padding:14px">A 买闲</button></div>
-<button id="abVoice" onclick="abListen()">🎙 说“庄”“闲”或“庄赢”</button>
+<button id="abVoice" onclick="abListen()" aria-pressed="false">🎙 开启持续语音</button><p id="abVoiceStatus" role="status">先说“庄”或“闲”选择 A；结果开出后说“庄赢”“闲赢”或“和局”。</p>
 <p>输入这一局的实际结果：</p>
-<button onclick="abResult('庄')">庄赢</button><button onclick="abResult('闲')">闲赢</button><button onclick="abResult('和')">和</button><button onclick="abUndo()">撤销上一局</button>
+<button id="resultBanker" onclick="abResult('庄')">庄赢</button><button id="resultPlayer" onclick="abResult('闲')">闲赢</button><button id="resultTie" onclick="abResult('和')">和局</button><button onclick="abUndo()">撤销上一局</button>
 <div class="card notice">实际盈亏（按庄闲 1:1 估算）：<strong id="abProfit">0</strong><br><span class="notice">未计算庄赢佣金及特殊赔付。</span><div id="abExit" class="notice" role="status" aria-live="polite" style="display:none;margin-top:8px;font-weight:bold"></div></div>
 <details class="card"><summary>分段记录和风险统计</summary><div id="abStats"></div></details>
 <p>逐局记录（A、B 注码按图片分列；最新一局在最下方）</p><div class="rows"><table><thead><tr><th>局</th><th>A</th><th>B</th><th>实际下注</th><th>结果</th><th>本局盈亏</th><th>累计</th></tr></thead><tbody id="abHistory"></tbody></table></div>
@@ -572,8 +573,10 @@ function abStart() {
 function abSay(message) {
     if (abSimulating || !document.getElementById('abSpeak').checked || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
+    if (abVoiceEnabled && abRecognition) { abVoicePaused=true; clearTimeout(abVoiceTimer); try { abRecognition.stop(); } catch(e) {} }
     var utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = 'zh-CN';
+    utterance.onend = utterance.onerror = function() { abVoicePaused=false; if (abVoiceEnabled) abVoiceTimer=setTimeout(abVoiceStart,700); };
     window.speechSynthesis.speak(utterance);
 }
 function abChoose(side) {
@@ -590,6 +593,8 @@ function abRender() {
     document.getElementById('abPlayer').classList.toggle('chosen', ab.side === '闲');
     document.getElementById('abBanker').setAttribute('aria-pressed', String(ab.side === '庄'));
     document.getElementById('abPlayer').setAttribute('aria-pressed', String(ab.side === '闲'));
+    var lastResult = ab.history.length && ab.history[ab.history.length-1].stats && ab.history[ab.history.length-1].stats.result;
+    [['resultBanker','庄'],['resultPlayer','闲'],['resultTie','和']].forEach(function(pair) { var button=document.getElementById(pair[0]); button.classList.toggle('result-selected', lastResult === pair[1]); button.setAttribute('aria-pressed', String(lastResult === pair[1])); });
     var opposite = ab.side === '庄' ? '闲' : '庄';
     var diff = Math.abs(ab.a.bet-ab.b.bet);
     var actual = !ab.side ? '请先选择 A 的方向' : !diff ? '本局不下注' : '实际买' + (ab.a.bet > ab.b.bet ? ab.side : opposite) + ' ' + diff;
@@ -808,26 +813,50 @@ function abRunSimulation() {
         finally { ab=original; abSimulating=false; button.disabled=false; }
     }, 0);
 }
+var abRecognition = null, abVoiceEnabled = false, abVoicePaused = false, abVoiceTimer = null;
+function abVoiceUI(message) {
+    var button=document.getElementById('abVoice');
+    button.textContent=abVoiceEnabled ? '🎙 关闭持续语音' : '🎙 开启持续语音';
+    button.setAttribute('aria-pressed',String(abVoiceEnabled));
+    document.getElementById('abVoiceStatus').textContent=message;
+}
+function abVoiceStart() {
+    if (!abVoiceEnabled || abVoicePaused || !abRecognition) return;
+    try { abRecognition.start(); } catch(e) { /* 已在监听时无需重复启动 */ }
+}
 function abListen() {
-    var Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Speech) { alert('当前浏览器不支持语音识别，请使用按钮选择'); return; }
+    if (abVoiceEnabled) {
+        abVoiceEnabled=false; clearTimeout(abVoiceTimer);
+        if (abRecognition) { try { abRecognition.stop(); } catch(e) {} }
+        abVoiceUI('语音已关闭。先选择 A 的方向，结果开出后再输入结果。'); return;
+    }
+    var Speech=window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Speech) { abVoiceUI('当前浏览器不支持语音识别，请使用按钮操作。'); return; }
     try {
-        var recognition=new Speech(); recognition.lang='zh-CN'; recognition.interimResults=false;
-        recognition.onresult=function(e) {
-            var t=e.results[0][0].transcript.replace(/[，。,.！!？?\s]/g, '');
-            // 手机可能将“买庄”识别成“买装”；仅在选择方向时纠正。
-            if (/买装/.test(t) && !/赢|勝|胜|开出|开了/.test(t)) t=t.replace(/买装/g, '买庄');
-            var banker = /庄|莊/.test(t), player = /闲|閒/.test(t);
-            if (/和局|平局|和了|^和$/.test(t) && !banker && !player) abResult('和');
-            else if (banker !== player && /赢|勝|胜|开出|开了/.test(t)) abResult(banker ? '庄' : '闲');
-            else if (/^(庄|莊|装)$/.test(t)) abChoose('庄');
-            else if (/^(闲|閒)$/.test(t)) abChoose('闲');
-            else if (banker !== player && /买|押|下注/.test(t)) abChoose(banker ? '庄' : '闲');
-            else alert('未能确定指令。请选择说“庄”“闲”“庄赢”“闲赢”或“和局”。识别结果：' + t);
+        abRecognition=new Speech(); abRecognition.lang='zh-CN'; abRecognition.interimResults=false; abRecognition.continuous=true;
+        abRecognition.onresult=function(e) {
+            for (var i=e.resultIndex; i<e.results.length; i++) {
+                if (!e.results[i].isFinal) continue;
+                var t=e.results[i][0].transcript.replace(/[，。,.！!？?\s]/g, '');
+                var original=t;
+                if (/买装/.test(t) && !/赢|勝|胜|开出|开了/.test(t)) t=t.replace(/买装/g, '买庄');
+                var banker=/庄|莊/.test(t), player=/闲|閒/.test(t);
+                if (/和局|平局|和了|^和$/.test(t) && !banker && !player) { abVoiceUI('听到：'+original+'。录入和局。'); abResult('和'); }
+                else if (banker !== player && /赢|勝|胜|开出|开了/.test(t)) { abVoiceUI('听到：'+original+'。录入'+(banker?'庄赢':'闲赢')+'。'); abResult(banker?'庄':'闲'); }
+                else if (/^(庄|莊|装)$/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买庄。'); abChoose('庄'); }
+                else if (/^(闲|閒)$/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买闲。'); abChoose('闲'); }
+                else if (banker !== player && /买|押|下注/.test(t)) { abVoiceUI('听到：'+original+'。选择 A 买'+(banker?'庄':'闲')+'。'); abChoose(banker?'庄':'闲'); }
+                else abVoiceUI('没有理解：'+original+'。请选择说“庄”“闲”“庄赢”“闲赢”或“和局”。');
+            }
         };
-        recognition.onerror=function(){ alert('语音识别失败，请检查浏览器和麦克风权限，或使用按钮选择'); };
-        recognition.start();
-    } catch(e) { alert('无法启动语音识别，请使用按钮选择'); }
+        abRecognition.onerror=function(e) {
+            if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+                abVoiceEnabled=false; abVoiceUI('语音无法使用，请检查麦克风权限或改用按钮。');
+            } else if (abVoiceEnabled && e.error !== 'aborted' && e.error !== 'no-speech') abVoiceUI('语音暂时中断，正在尝试恢复。');
+        };
+        abRecognition.onend=function() { if (abVoiceEnabled && !abVoicePaused) abVoiceTimer=setTimeout(abVoiceStart,600); };
+        abVoiceEnabled=true; abVoiceUI('持续语音已开启。先说“庄”或“闲”；结果开出后说“庄赢”“闲赢”或“和局”。'); abVoiceStart();
+    } catch(e) { abVoiceEnabled=false; abVoiceUI('无法启动语音，请使用按钮操作。'); }
 }
 
 abRestore();
