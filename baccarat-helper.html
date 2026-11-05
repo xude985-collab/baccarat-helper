@@ -136,6 +136,7 @@ h1 { color: #e8ca83; letter-spacing: .08em; margin: 8px 0 14px; }
 .strategy select option { background: #223247; color: #f1f5fa; }
 .strategy input[type="checkbox"] { accent-color: #ffdf70; width: 18px; height: 18px; vertical-align: middle; }
 #strategy #abVoice[aria-pressed="true"] { background: #ffdf70; color: #172333; border: 2px solid #fff2bb; font-weight: bold; }
+#strategy #abStartButton.started { background: #ffdf70; color: #172333; border: 2px solid #fff2bb; font-weight: bold; }
 .strategy input[type="number"]:not(:placeholder-shown) { background: #fff0ba; color: #172333; border-color: #ffdf70; font-weight: bold; }
 #strategy #abBanker.chosen, #strategy #abPlayer.chosen { background: #ffdf70 !important; color: #172333; border: 3px solid #fff2bb; box-shadow: 0 0 0 2px #202936, 0 0 0 4px #ffdf70; }
 #strategy .result-selected { background: #ffdf70 !important; color: #172333; border: 3px solid #fff2bb; font-weight: bold; }
@@ -156,7 +157,8 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 <p class="notice">目前只计算基本连对、连错规则。模式切换及进入移花的注码转移已初步实现；策略正在按示例验证，下注金额暂供试算，因此这里的注码只是初步结果，请勿作为实际下注依据。</p>
 <label>基础注码 <select id="abBase" onchange="document.getElementById('abCustomBase').style.display=this.value === 'custom' ? 'inline-block' : 'none'"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="500">500</option><option value="1000">1000</option><option value="custom">自定义</option></select> <input id="abCustomBase" type="number" min="1" step="1" placeholder="输入金额" style="display:none;width:110px"></label>
 <label>观察头寸（不下注），最后连续两个对在 <select id="abPosition" required><option value="">请选择</option><option value="A">A 两个对</option><option value="B">B 两个对</option></select></label>
-<button onclick="abStart()">开始 / 重新开始</button>
+<button id="abStartButton" onclick="abStart()">开始 / 重新开始</button>
+<p id="abStartStatus" class="notice" role="status" aria-live="polite" style="display:none;font-weight:bold"></p>
 <p id="abStorage" class="notice" style="display:none"></p>
 <div id="abGame" style="display:none">
 <p>每局先选择 A 的方向，B 自动选择相反方向。</p>
@@ -575,6 +577,11 @@ function abStart() {
     ab = { base:base, position:position, side:null, a:{bet:base,wins:0,losses:0}, b:{bet:base,wins:0,losses:0}, profit:0, history:[], mode:'母本', anchor:position, runSide:null, runCount:0, segment:0, highExitSeen:false, exitReasons:[] };
     document.getElementById('abGame').style.display = 'block';
     abRender();
+    var status=document.getElementById('abStartStatus');
+    status.textContent='✓ 新的一局已开始：基础注码 ' + base + '，观察头寸 ' + position + ' 两个对。请选择 A 的方向。';
+    status.style.display='block';
+    document.getElementById('abStorage').style.display='none';
+    abSay('新的一局已开始。基础注码' + base + '，观察头寸' + position + '两个对。请选择A的方向。');
 }
 function abSay(message) {
     if (abSimulating || !document.getElementById('abSpeak').checked || !('speechSynthesis' in window)) return;
@@ -604,6 +611,8 @@ function abChoose(side) {
 }
 function abRender() {
     if (!ab || abSimulating) return;
+    document.getElementById('abStartButton').classList.add('started');
+    document.getElementById('abStartButton').textContent='✓ 已开始 / 重新开始';
     document.getElementById('abBanker').classList.toggle('chosen', ab.side === '庄');
     document.getElementById('abPlayer').classList.toggle('chosen', ab.side === '闲');
     document.getElementById('abBanker').setAttribute('aria-pressed', String(ab.side === '庄'));
@@ -656,6 +665,8 @@ function abRestore() {
         if (choice.value === 'custom') { document.getElementById('abCustomBase').value=ab.base; document.getElementById('abCustomBase').style.display='inline-block'; }
         document.getElementById('abPosition').value=ab.position;
         document.getElementById('abGame').style.display='block';
+        document.getElementById('abStartStatus').textContent='✓ 已恢复上次牌局，可以继续记录。';
+        document.getElementById('abStartStatus').style.display='block';
         document.getElementById('abStorage').textContent='已恢复上次保存在本机浏览器的记录。';
         document.getElementById('abStorage').style.display='block';
         abRender();
